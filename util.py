@@ -47,3 +47,11 @@ def train(model, data):
                    .format(epoch, loss.item(), val_loss, test_acc))
 
     return best_model, final_test_acc
+
+def count_parameters(model):
+    total_parameters = 0
+    for name, param in model.named_parameters():
+        param_count = param.numel()
+        total_parameters += param_count
+        print(f"{name}: {param_count}")
+    print(f"Total parameters: {total_parameters}")

@@ -17,16 +17,16 @@ def main():
     # name: CiteSeer Cora NELL PubMed
     t_total = time.time()
     dataset, num_in_feats, num_out_feats = load_data(path, name='PubMed')
-    model = GAT(num_in_feats, 64, num_out_feats).to(device)
+    model = GAT(num_in_feats, 64, num_out_feats, finetune = True).to(device)
+    # load pre-trained model
+    model.load_state_dict(torch.load('weight_base.pth'), strict=False)
     model, test_acc = train(model, dataset)
     print('test acc:', test_acc)
     print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
-    # Save model
-    torch.save(model.state_dict(), 'weight_base.pth')
     count_parameters(model)
     with open('result.txt', 'a') as text: 
         mem = psutil.virtual_memory()
-        print(f"pre_train used memories : {mem.used}", file=text)
+        print(f"fine-tuning used memories : {mem.used}", file=text)
 
 if __name__ == '__main__':
     main()

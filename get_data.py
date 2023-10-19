@@ -15,6 +15,3 @@ def load_data(path, name):
         data.x = data.x.to_dense()
 
     return data, dataset.num_node_features, dataset.num_classes
-
-
-
