@@ -24,7 +24,7 @@ def main():
     # Save model
     torch.save(model.state_dict(), 'weight_base.pth')
     count_parameters(model)
-    with open('result.txt', 'a') as text: 
+    with open('result.txt', 'w') as text: 
         mem = psutil.virtual_memory()
         print(f"pre_train used memories : {mem.used}", file=text)
 

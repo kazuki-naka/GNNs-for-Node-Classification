@@ -144,19 +144,25 @@ class GATConv(MessagePassing):
         # transformations 'lin_src' and 'lin_dst' to source and target nodes:
         if isinstance(in_channels, int):
             if finetune: 
-                self.lin_src = lora.Linear(in_channels, heads * out_channels, r = 1, bias = False)
+                self.lin_src = lora.Linear(in_channels, heads * out_channels, r = 8, bias = False)
             else: 
                 self.lin_src = Linear(in_channels, heads * out_channels,
                                     bias=False, weight_initializer='glorot')
+            # self.lin_src = Linear(in_channels, heads * out_channels,
+            #                         bias=False, weight_initializer='glorot')
                 
             self.lin_dst = self.lin_src
         else:
             if finetune: 
-                self.lin_src = lora.Linear(in_channels[0], heads * out_channels, r = 1, bias = False)
+                self.lin_src = lora.Linear(in_channels[0], heads * out_channels, r = 8, bias = False)
+                self.lin_dst = lora.Linear(in_channels[1], heads * out_channels, r = 8, bias = False)
             else: 
                 self.lin_src = Linear(in_channels[0], heads * out_channels, False,
                                     weight_initializer='glorot')
-            self.lin_dst = Linear(in_channels[1], heads * out_channels, False,
+            # self.lin_src = Linear(in_channels[0], heads * out_channels, False,
+            #                         weight_initializer='glorot')
+            
+                self.lin_dst = Linear(in_channels[1], heads * out_channels, False,
                                   weight_initializer='glorot')
 
         # The learnable parameters to compute attention coefficients:
@@ -164,8 +170,13 @@ class GATConv(MessagePassing):
         self.att_dst = Parameter(torch.empty(1, heads, out_channels))
 
         if edge_dim is not None:
-            self.lin_edge = Linear(edge_dim, heads * out_channels, bias=False,
+            if finetune : 
+                self.lin_edge = lora.Linear(edge_dim, heads * out_channels, r = 16, bias = False)
+            else :
+                self.lin_edge = Linear(edge_dim, heads * out_channels, bias=False,
                                    weight_initializer='glorot')
+            # self.lin_edge = Linear(edge_dim, heads * out_channels, bias=False,
+            #                        weight_initializer='glorot')
             self.att_edge = Parameter(torch.empty(1, heads, out_channels))
         else:
             self.lin_edge = None

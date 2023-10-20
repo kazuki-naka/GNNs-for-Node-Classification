@@ -1,10 +1,1 @@
-pre_train used memories : 8496930816
-fine-tuning used memories : 8459104256
-pre_train used memories : 8528564224
-fine-tuning used memories : 8524099584
-pre_train used memories : 8561545216
-fine-tuning used memories : 8518246400
-pre_train used memories : 8524615680
-fine-tuning used memories : 8521510912
-pre_train used memories : 8589570048
-fine-tuning used memories : 8592441344
+pre_train used memories : 6897004544
