@@ -28,23 +28,27 @@ def train(model, data):
     min_val_loss = np.Inf
     best_model = None
     min_epochs = 5
-    model.train()
-    final_test_acc = 0
-    for epoch in tqdm(range(200)):
-        out = model(data)
-        optimizer.zero_grad()
-        loss = loss_function(out[data.train_mask], data.y[data.train_mask])
-        loss.backward()
-        optimizer.step()
+    with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
+        model.train()
+        final_test_acc = 0
+        for epoch in tqdm(range(200)):
+            out = model(data)
+            optimizer.zero_grad()
+            loss = loss_function(out[data.train_mask], data.y[data.train_mask])
+            loss.backward()
+            optimizer.step()
 
-        # validation
-        val_loss, test_acc = test(model, data)
-        if val_loss < min_val_loss and epoch + 1 > min_epochs:
-            min_val_loss = val_loss
-            final_test_acc = test_acc
-            best_model = copy.deepcopy(model)
-        tqdm.write('Epoch {:03d} train_loss {:.4f} val_loss {:.4f} test_acc {:.4f}'
-                   .format(epoch, loss.item(), val_loss, test_acc))
+            # validation
+            val_loss, test_acc = test(model, data)
+            if val_loss < min_val_loss and epoch + 1 > min_epochs:
+                min_val_loss = val_loss
+                final_test_acc = test_acc
+                best_model = copy.deepcopy(model)
+            tqdm.write('Epoch {:03d} train_loss {:.4f} val_loss {:.4f} test_acc {:.4f}'
+                    .format(epoch, loss.item(), val_loss, test_acc))
+    
+    with open('result.txt', 'a') as text: 
+        print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
 
     return best_model, final_test_acc
 
