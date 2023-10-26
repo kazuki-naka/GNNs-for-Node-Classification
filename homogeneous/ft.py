@@ -21,24 +21,14 @@ def main():
     model = GAT(num_in_feats, 64, num_out_feats, finetune = True).to(device)
     # load pre-trained model
     model.load_state_dict(torch.load('weight_base.pth'), strict=False)
-
-    # Fine-tuning, freeze layers' weight except last layer
-    for layer in model.parameters(): 
-        layer.requires_grad = False
-    
-    for param in model.conv1.lin_dst.parameters(): 
-        param.requires_grad = True
-
-    for param in model.conv2.lin_dst.parameters(): 
-        param.requires_grad = True
-    
+    mem1 = psutil.virtual_memory()
     model, test_acc = train(model, dataset)
+    mem2 = psutil.virtual_memory()
     print('test acc:', test_acc)
     print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
     count_parameters(model)
     with open('result.txt', 'a') as text: 
-        mem = psutil.virtual_memory()
-        print(f"fine-tuning used memories : {mem.used}", file=text)
+        print(f"fine-tuning used memories : {mem2.used - mem1.used}", file=text)
 
 if __name__ == '__main__':
     main()

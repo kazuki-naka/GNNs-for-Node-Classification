@@ -1,1 +1,2 @@
-pre_train used memories : 6897004544
+pre_train used memories : 875827200
+fine-tuning used memories : 882835456
