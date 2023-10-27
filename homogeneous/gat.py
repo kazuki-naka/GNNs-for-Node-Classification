@@ -5,9 +5,8 @@ sys.path.insert(0, os.path.join(os.path.abspath(os.path.dirname(__file__)), os.p
 import torch
 import time
 
-from get_data import load_data
 from models import GAT
-from util import train, count_parameters, device
+from util import load_data, train, count_parameters, device
 
 path = os.path.abspath(os.path.dirname(os.getcwd())) + "/data"
 
@@ -22,7 +21,6 @@ def main():
     print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
     # Save model
     torch.save(model.state_dict(), 'weight_base.pth')
-    count_parameters(model)
 
 if __name__ == '__main__':
     main()

@@ -1,8 +1,7 @@
 import os
 
-from get_data import load_data
 from models import GraphSAGE
-from util import train, device
+from util import train, device, load_data
 
 path = os.path.abspath(os.path.dirname(os.getcwd())) + "/data"
 

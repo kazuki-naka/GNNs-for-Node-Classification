@@ -1,8 +1,7 @@
 import os
 
-from get_data import load_data
 from models import GCN
-from util import device, train
+from util import device, train, load_data
 
 path = os.path.abspath(os.path.dirname(os.getcwd())) + "/data"
 

@@ -5,6 +5,8 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
+from torch_geometric.datasets import NELL, Planetoid
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -28,6 +30,8 @@ def train(model, data):
     min_val_loss = np.Inf
     best_model = None
     min_epochs = 5
+
+    # Using torch profiler for how much CPU memory has been used
     with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
         model.train()
         final_test_acc = 0
@@ -52,10 +56,14 @@ def train(model, data):
 
     return best_model, final_test_acc
 
-def count_parameters(model):
-    total_parameters = 0
-    for name, param in model.named_parameters():
-        param_count = param.numel()
-        total_parameters += param_count
-        print(f"{name}: {param_count}")
-    print(f"Total parameters: {total_parameters}")
+def load_data(path, name):
+    if name == 'NELL':
+        dataset = NELL(root=path + '/NELL')
+    else:
+        dataset = Planetoid(root=path, name=name)
+
+    data = dataset[0].to(device)
+    if name == 'NELL':
+        data.x = data.x.to_dense()
+
+    return data, dataset.num_node_features, dataset.num_classes
