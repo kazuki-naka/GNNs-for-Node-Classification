@@ -7,9 +7,8 @@ import time
 import loralib as lora
 import torch.nn.utils.prune as prune
 
-from get_data import load_data
 from models import GAT
-from util import train, count_parameters, device
+from util import train, load_data, device
 
 path = os.path.abspath(os.path.dirname(os.getcwd())) + "/data"
 
@@ -27,25 +26,15 @@ def main():
                           "conv2.lin_src.lora_A", "conv2.lin_src.lora_B", "conv2.lin_dst.lora_A", "conv2.lin_dst.lora_B"]
     params_to_update = []
     for name, param in model.named_parameters():
-        print(f"name : {name}")
-        print(f"parameter : {param}")
         if name in update_param_names:
             param.requires_grad = True
             params_to_update.append(param)
         else:
             param.requires_grad = False
-    # optimizer = torch.optim.Adam(params=params_to_update, lr=0.001)
-    # criterion = nn.CrossEntropyLoss()
-    # print(model)
 
-    # mem1 = psutil.virtual_memory()
     model, test_acc = train(model, dataset)
-    # mem2 = psutil.virtual_memory()
     print('test acc:', test_acc)
     print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
-    count_parameters(model)
-    # with open('result.txt', 'a') as text: 
-    #     print(f"fine-tuning used memories : {mem2.used - mem1.used}", file=text)
 
 if __name__ == '__main__':
     main()

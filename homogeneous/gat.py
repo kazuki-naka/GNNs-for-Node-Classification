@@ -6,7 +6,7 @@ import torch
 import time
 
 from models import GAT
-from util import load_data, train, count_parameters, device
+from util import load_data, train, device
 
 path = os.path.abspath(os.path.dirname(os.getcwd())) + "/data"
 
