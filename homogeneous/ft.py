@@ -15,15 +15,16 @@ path = os.path.abspath(os.path.dirname(os.getcwd())) + "/data"
 
 def main():
     # name: CiteSeer Cora NELL PubMed
-    t_total = time.time()
     dataset, num_in_feats, num_out_feats = load_data(path, name='PubMed')
     model = GAT(num_in_feats, 64, num_out_feats, finetune = True).to(device)
     # load pre-trained model
     model.load_state_dict(torch.load('weight_base.pth'), strict=False)
     
     lora.mark_only_lora_as_trainable(model)
-    update_param_names = ["conv1.lin_src.lora_A", "conv1.lin_src.lora_B", "conv1.lin_dst.lora_A", "conv1.lin_dst.lora_B",
-                          "conv2.lin_src.lora_A", "conv2.lin_src.lora_B", "conv2.lin_dst.lora_A", "conv2.lin_dst.lora_B"]
+    # update_param_names = ["conv1.lin_src.lora_A", "conv1.lin_src.lora_B", "conv1.lin_dst.lora_A", "conv1.lin_dst.lora_B",
+    #                       "conv2.lin_src.lora_A", "conv2.lin_src.lora_B", "conv2.lin_dst.lora_A", "conv2.lin_dst.lora_B"]
+
+    update_param_names = ["conv1.lin_src.lora_A", "conv1.lin_src.lora_B"]
     params_to_update = []
     for name, param in model.named_parameters():
         if name in update_param_names:
@@ -32,6 +33,7 @@ def main():
         else:
             param.requires_grad = False
 
+    t_total = time.time()
     model, test_acc = train(model, dataset)
     print('test acc:', test_acc)
     print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
