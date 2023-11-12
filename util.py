@@ -5,7 +5,12 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from torch_geometric.datasets import NELL, Planetoid
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+
+from torch_geometric.datasets import NELL, Planetoid, ExplainerDataset
+from torch_geometric.datasets.graph_generator import BAGraph
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -56,14 +61,56 @@ def train(model, data):
 
     return best_model, final_test_acc
 
-def load_data(path, name):
+# def load_data(path, name):
+#     if name == 'NELL':
+#         dataset = NELL(root=path + '/NELL')
+#     else:
+#         dataset = Planetoid(root=path, name=name)
+
+#     data = dataset[0].to(device)
+#     if name == 'NELL':
+#         data.x = data.x.to_dense()
+
+#     return data, dataset.num_node_features, dataset.num_classes
+
+def load_data():
     if name == 'NELL':
         dataset = NELL(root=path + '/NELL')
     else:
-        dataset = Planetoid(root=path, name=name)
+        # dataset = Planetoid(root=path, name=name)
+
+        # Create Synthetic data of PubMed
+        dataset = ExplainerDataset(
+            graph_generator=BAGraph(num_nodes=19717, num_edges=88648),
+            motif_generator='house',
+            num_motifs=80,
+        )
 
     data = dataset[0].to(device)
     if name == 'NELL':
         data.x = data.x.to_dense()
 
     return data, dataset.num_node_features, dataset.num_classes
+
+# Make distribution shift of dataset and graph
+def plot_sensitivity(name, file, betas, n_moments): 
+    """
+    Plot sensitivity analysis
+    """
+    base_mmatch = 4
+    base_mmd = accs_mmd.mean(1).mean(0).argmax()
+    
+    f, ax = plt.subplots(1, 1)
+    for i in range(12):
+        ax.plot(n_moments,
+                file.mean(1)[i,:]/file.mean(1)[i,base_mmatch])
+    ax.plot(n_moments,
+            file.mean(1).mean(0)/file.mean(1).mean(0)[base_mmatch],
+            'k--',linewidth=4)
+    ax.grid(True,linestyle='-',color='0.75')
+    plt.sca(ax)
+    plt.xticks(range(1,len(n_moments)+1),n_moments)
+    plt.xlabel('number of moments', fontsize=15)
+    plt.ylabel('accuracy improvement', fontsize=15)
+    ax.set_ylim([0.4,1.0])
+    plt.savefig(name+'.png')
