@@ -1,9 +1,13 @@
 # -*- coding:utf-8 -*-
+import os
 import copy
 
 import numpy as np
 import torch
+from torch import nn
 from tqdm import tqdm
+
+import pickle as pkl
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -61,34 +65,46 @@ def train(model, data):
 
     return best_model, final_test_acc
 
-# def load_data(path, name):
-#     if name == 'NELL':
-#         dataset = NELL(root=path + '/NELL')
-#     else:
-#         dataset = Planetoid(root=path, name=name)
+def gen_planetoid_dataset(name):
+    torch_dataset = Planetoid(root=f'../data/Planetoid',
+                              name=name)
+    data = torch_dataset[0]
 
-#     data = dataset[0].to(device)
-#     if name == 'NELL':
-#         data.x = data.x.to_dense()
+    edge_index = data.edge_index
+    x = data.x
+    label = data.y
+    c = label.max().item() + 1
+    d = x.shape[1]
 
-#     return data, dataset.num_node_features, dataset.num_classes
+    data_dir = '../data/Planetoid/{}/gen'.format(name)
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
 
-def load_data():
-    if name == 'NELL':
-        dataset = NELL(root=path + '/NELL')
-    else:
-        # dataset = Planetoid(root=path, name=name)
+    Generator_x = GAT(10, 10, 10)
+    Generator_y = GAT(in_feats=d, h_feats=10, out_feats=10)
+    Generator_noise = nn.Linear(10, 10)
+    for i in range(10):
+        x_new = x
+        y_new = Generator_y(x, edge_index)
+        y_new = torch.argmax(y_new, dim=-1)
+        label_new = F.one_hot(y_new, 10).squeeze(1).float()
+        context_ = torch.zeros(x.size(0), 10)
+        context_[:, i] = 1
+        x2 = Generator_x(label_new, edge_index) + Generator_noise(context_)
+        x_new = torch.cat([x_new, x2], dim=1)
 
-        # Create Synthetic data of PubMed
-        dataset = ExplainerDataset(
-            graph_generator=BAGraph(num_nodes=19717, num_edges=88648),
-            motif_generator='house',
-            num_motifs=80,
-        )
+        with open(data_dir + '/{}-{}.pkl'.format(i, 'gat'), 'wb') as f:
+            pkl.dump((x_new, y_new), f, pkl.HIGHEST_PROTOCOL)
 
-    data = dataset[0].to(device)
-    if name == 'NELL':
-        data.x = data.x.to_dense()
+def load_data(data_dir, name):
+    gen_planetoid_dataset(name)
+
+    if name == "cora": 
+        node_feat, y = pkl.load(open('{}/Planetoid/cora/gen/{}-{}.pkl'.format(data_dir, 'gat', 'gat'), 'rb'))
+        dataset = Planetoid(root='{}/Planetoid'.format(data_dir), name=name)
+        dataset.num_node_features = node_feat
+        data = dataset[0].to(device)
+        data.y = y
 
     return data, dataset.num_node_features, dataset.num_classes
 
