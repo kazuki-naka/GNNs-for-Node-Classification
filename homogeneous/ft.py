@@ -14,8 +14,7 @@ path = os.path.abspath(os.path.dirname(os.getcwd())) + "/data"
 
 
 def main():
-    # dataset, num_in_feats, num_out_feats = load_data(path, name='PubMed')
-    dataset, num_in_feats, num_out_feats = load_data()
+    dataset, num_in_feats, num_out_feats = load_data(path, name='Cora')
     model = GAT(num_in_feats, 64, num_out_feats, finetune = True).to(device)
     # load pre-trained model
     model.load_state_dict(torch.load('weight_base.pth'), strict=False)
