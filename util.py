@@ -7,20 +7,15 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from tqdm import tqdm
-
 import pickle as pkl
-
 from models import GAT
 
-import matplotlib as mpl
-mpl.use('Agg')
-import matplotlib.pyplot as plt
+import networkx as nx
+import scipy.sparse as sp
 
-from torch_geometric.datasets import NELL, Planetoid, ExplainerDataset, FakeDataset
-from torch_geometric.datasets.graph_generator import BAGraph
+from torch_geometric.datasets import FakeDataset
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 
 @torch.no_grad()
 def test(model, data):
@@ -68,54 +63,6 @@ def train(model, data):
 
     return best_model, final_test_acc
 
-# def gen_planetoid_dataset(name):
-#     torch_dataset = Planetoid(root=f'../data/Planetoid', name=name)
-#     data = torch_dataset[0]
-
-#     edge_index = data.edge_index
-#     x = data.x
-#     label = data.y
-#     c = label.max().item() + 1
-#     d = x.shape[1]
-
-#     data_dir = '../data/Planetoid/{}/gen'.format(name)
-#     if not os.path.exists(data_dir):
-#         os.makedirs(data_dir)
-
-#     Generator_x = GAT(10, 10, 10)
-#     Generator_y = GAT(in_feats=d, h_feats=10, out_feats=10)
-#     Generator_noise = nn.Linear(10, 10)
-#     for i in range(10):
-#         x_new = x
-#         y_new = Generator_y(x, edge_index)
-#         y_new = torch.argmax(y_new, dim=-1)
-#         label_new = F.one_hot(y_new, 10).squeeze(1).float()
-#         context_ = torch.zeros(x.size(0), 10)
-#         context_[:, i] = 1
-#         x2 = Generator_x(label_new, edge_index) + Generator_noise(context_)
-#         x_new = torch.cat([x_new, x2], dim=1)
-
-#         with open(data_dir + '/{}-{}.pkl'.format(i, 'gat'), 'wb') as f:
-#             pkl.dump((x_new, y_new), f, pkl.HIGHEST_PROTOCOL)
-
-# def load_data(data_dir, name):
-#     gen_planetoid_dataset(name)
-
-#     if name == "cora": 
-#         node_feat, y = pkl.load(open('{}/Planetoid/cora/gen/{}-{}.pkl'.format(data_dir, 'gat', 'gat'), 'rb'))
-#         dataset = Planetoid(root='{}/Planetoid'.format(data_dir), name=name)
-#         dataset.num_node_features = node_feat
-#         data = dataset[0].to(device)
-#         data.y = y
-
-#     return data, dataset.num_node_features, dataset.num_classes
-
-# def load_data(): 
-#     dataset = ExplainerDataset(graph_generator=BAGraph(num_nodes=19717, num_edges=88648), motif_generator='house', num_motifs=80)
-#     data = dataset[0].to(device)
-    
-#     return data, dataset.num_node_features, dataset.num_classes
-
 # def load_data(path, name):
 #     dataset = Planetoid(root=path, name=name)
 
@@ -131,25 +78,58 @@ def load_data():
 
     return data, dataset.num_node_features, dataset.num_classes
 
-# Make distribution shift of dataset and graph
-# def plot_sensitivity(name, file, betas, n_moments): 
-#     """
-#     Plot sensitivity analysis
-#     """
-#     base_mmatch = 4
-#     base_mmd = accs_mmd.mean(1).mean(0).argmax()
+def cmd(X, X_test, K=5): 
+    x1 = X
+    x2 = X_test
+    mx1 = x1.mean(0)
+    mx2 = x2.mean(0)
+    sx1 = x1 - mx1
+    sx2 = x2 - mx2
+    dm = l2diff(mx1,mx2)
+    scms = [dm]
+    for i in range(K-1):
+        # moment diff of centralized samples
+        scms.append(moment_diff(sx1,sx2,i+2))
+        #scms+=moment_diff(sx1,sx2,1)
+    return sum(scms)
+
+def l2diff(x1, x2): 
+    return (x1-x2).norm(p=2)
+
+def moment_diff(sx1, sx2, k): 
+    ss1 = sx1.pow(k).mean(0)
+    ss2 = sx2.pow(k).mean(0)
+    return l2diff(ss1,ss2)
+
+def pairwise_distances(x, y=None): 
+    x_norm = (x**2).sum(1).view(-1, 1)
+    if y is not None:
+        y_t = torch.transpose(y, 0, 1)
+        y_norm = (y**2).sum(1).view(1, -1)
+    else:
+        y_t = torch.transpose(x, 0, 1)
+        y_norm = x_norm.view(1, -1)
     
-#     f, ax = plt.subplots(1, 1)
-#     for i in range(12):
-#         ax.plot(n_moments,
-#                 file.mean(1)[i,:]/file.mean(1)[i,base_mmatch])
-#     ax.plot(n_moments,
-#             file.mean(1).mean(0)/file.mean(1).mean(0)[base_mmatch],
-#             'k--',linewidth=4)
-#     ax.grid(True,linestyle='-',color='0.75')
-#     plt.sca(ax)
-#     plt.xticks(range(1,len(n_moments)+1),n_moments)
-#     plt.xlabel('number of moments', fontsize=15)
-#     plt.ylabel('accuracy improvement', fontsize=15)
-#     ax.set_ylim([0.4,1.0])
-#     plt.savefig(name+'.png')
+    dist = x_norm + y_norm - 2.0 * torch.mm(x, y_t)
+    return torch.clamp(dist, 0.0, np.inf)
+
+def KMM(X,Xtest,_A=None, _sigma=1e1,beta=0.2):
+
+    H = torch.exp(- 1e0 * pairwise_distances(X)) + torch.exp(- 1e-1 * pairwise_distances(X)) + torch.exp(- 1e-3 * pairwise_distances(X))
+    f = torch.exp(- 1e0 * pairwise_distances(X, Xtest)) + torch.exp(- 1e-1 * pairwise_distances(X, Xtest)) + torch.exp(- 1e-3 * pairwise_distances(X, Xtest))
+    z = torch.exp(- 1e0 * pairwise_distances(Xtest, Xtest)) + torch.exp(- 1e-1 * pairwise_distances(Xtest, Xtest)) + torch.exp(- 1e-3 * pairwise_distances(Xtest, Xtest))
+    H /= 3
+    f /= 3
+    MMD_dist = H.mean() - 2 * f.mean() + z.mean()
+    
+    nsamples = X.shape[0]
+    f = - X.shape[0] / Xtest.shape[0] * f.matmul(torch.ones((Xtest.shape[0],1)))
+    G = - np.eye(nsamples)
+    _A = _A[~np.all(_A==0, axis=1)]
+    b = _A.sum(1)
+    h = - beta * np.ones((nsamples,1))
+    
+    from cvxopt import matrix, solvers
+    solvers.options['show_progress'] = False
+    sol=solvers.qp(matrix(H.numpy().astype(np.double)), matrix(f.numpy().astype(np.double)), matrix(G), matrix(h), matrix(_A), matrix(b))
+    return np.array(sol['x']), MMD_dist.item()
