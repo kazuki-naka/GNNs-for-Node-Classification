@@ -16,6 +16,7 @@ import scipy.sparse as sp
 from torch_geometric.datasets import FakeDataset
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+DATASET = "Cora"
 
 @torch.no_grad()
 def test(model, data):
@@ -65,14 +66,58 @@ def train(model, data):
 
 # def load_data(path, name):
 #     dataset = Planetoid(root=path, name=name)
-
 #     data = dataset[0].to(device)
 
 #     print(data)
 
 #     return data, dataset.num_node_features, dataset.num_classes
 
-def load_data(): 
+def load_data(dataset_str): 
+    names = ['x', 'y', 'tx', 'ty', 'allx', 'ally', 'graph']
+    objects = []
+    for i in range(len(names)):
+        with open("data/ind.{}.{}".format(dataset_str, names[i]), 'rb') as f:
+            if sys.version_info > (3, 0):
+                objects.append(pkl.load(f, encoding='latin1'))
+            else:
+            #if True:
+                objects.append(pkl.load(f))
+
+    x, y, tx, ty, allx, ally, graph = tuple(objects)
+    test_idx_reorder = parse_index_file("data/ind.{}.test.index".format(dataset_str))
+    test_idx_range = np.sort(test_idx_reorder)
+    # embed()
+    if dataset_str == 'citeseer':
+        # Fix citeseer dataset (there are some isolated nodes in the graph)
+        # Find isolated nodes, add them as zero-vecs into the right position
+        test_idx_range_full = range(min(test_idx_reorder), max(test_idx_reorder)+1)
+        tx_extended = sp.lil_matrix((len(test_idx_range_full), x.shape[1]))
+        tx_extended[test_idx_range-min(test_idx_range), :] = tx
+        tx = tx_extended
+        ty_extended = np.zeros((len(test_idx_range_full), y.shape[1]))
+        ty_extended[test_idx_range-min(test_idx_range), :] = ty
+        ty = ty_extended
+    # embed()
+    features = sp.vstack((allx, tx)).tolil()
+    features[test_idx_reorder, :] = features[test_idx_range, :]
+    adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
+    #embed()
+    labels = np.vstack((ally, ty))
+    labels[test_idx_reorder, :] = labels[test_idx_range, :]
+
+    idx_test = test_idx_range.tolist()
+    #embed()
+    #idx_train = range(len(y))
+    if dataset_str == 'pubmed':
+        idx_train = range(10000)
+    elif dataset_str == 'cora':
+        idx_train = range(1500)
+    else:
+        idx_train = range(1000)
+    idx_val = range(len(y), len(y)+500)
+    return adj, features, labels, idx_train, idx_val, idx_test
+
+def load_synthetic_data(): 
     dataset = FakeDataset(num_channels=1433, num_classes=7, task='node')
     data = dataset[0].to(device)
 
@@ -133,3 +178,14 @@ def KMM(X,Xtest,_A=None, _sigma=1e1,beta=0.2):
     solvers.options['show_progress'] = False
     sol=solvers.qp(matrix(H.numpy().astype(np.double)), matrix(f.numpy().astype(np.double)), matrix(G), matrix(h), matrix(_A), matrix(b))
     return np.array(sol['x']), MMD_dist.item()
+
+def preprocess_features(features): 
+    rowsum = np.array(features.sum(1))
+    r_inv = np.power(rowsum, -1).flatten()
+    r_inv[np.isinf(r_inv)] = 0.
+    r_mat_inv = sp.diags(r_inv)
+    features = r_mat_inv.dot(features)
+    try:
+        return features.todense()
+    except:
+        return features
