@@ -11,7 +11,8 @@ from util import load_data, train, device
 path = os.path.abspath(os.path.dirname(os.getcwd())) + "/data"
 
 def main():
-    dataset, num_in_feats, num_out_feats = load_data(path, name='Cora')
+    # dataset, num_in_feats, num_out_feats = load_data(path, name='Cora')
+    dataset, num_in_feats, num_out_feats = load_data()
     model = GAT(num_in_feats, 64, num_out_feats).to(device)
     t_total = time.time()
     model, test_acc = train(model, dataset)
