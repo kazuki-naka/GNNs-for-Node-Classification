@@ -25,6 +25,10 @@ def main():
     features = torch.FloatTensor(preprocess_features(features)).to(device)
     xent = nn.CrossEntropyLoss(reduction='none')
 
+    model = GAT(g, ft_size, 32, nb_classes, 2, F.tanh, 0.5, finetune=True)
+    optimiser = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=0.0005)
+    model.cuda()
+
     idx_train = torch.LongTensor(pickle.load(open('data/{0}/raw/localized_seeds_{1}.p'.format(DATASET, DATASET), 'rb'))[0])
     all_idx = set(range(g.number_of_nodes())) - set(idx_train)
     idx_test = torch.LongTensor(list(all_idx))
@@ -38,7 +42,6 @@ def main():
         label_balance_constraints[labels[idx], i] = 1
     kmm_weight, MMD_dist = KMM(Z_train, Z_test, label_balance_constraints, beta=0.2)
 
-    model = GAT(num_in_feats, 64, num_out_feats, finetune = True).to(device)
     # load pre-trained model
     model.load_state_dict(torch.load('weight_base.pth'), strict=False)
     lora.mark_only_lora_as_trainable(model)
@@ -53,8 +56,25 @@ def main():
         else:
             param.requires_grad = False
     t_total = time.time()
-    model, test_acc = train(model, dataset)
-    print('test acc:', test_acc)
+    with torch.profiler.profile(profile_memory=True, with_flops=True) as p:
+    for epoch in range(200):
+        model.train()
+        optimiser.zero_grad()
+        logits = model(features)
+        loss = xent(logits[idx_train], labels[idx_train])
+        loss = (torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean() + model.shift_robust_output(idx_train, iid_train)
+        loss.backward()
+        optimiser.step()
+
+    model.eval()
+    embeds = model(features).detach()
+    logits = embeds[idx_test]
+    preds_all = torch.argmax(embeds, dim=1)
+
+    with open('new_result.txt', 'a') as text: 
+        print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
+
+    print("Accuracy:{}".format(f1_score(labels[idx_test].cpu(), preds_all[idx_test].cpu(), average='micro')))
     print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
 
 if __name__ == '__main__':

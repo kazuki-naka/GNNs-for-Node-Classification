@@ -28,18 +28,19 @@ class GAT(nn.Module):
                  n_layers,
                  activation,
                  dropout,
-                 num_heads=8):
+                 num_heads=8, 
+                 finetune=False):
         super(GAT, self).__init__()
         self.layers = nn.ModuleList()
         self.g = g
 
         # input layer
-        self.layers.append(GATConv(in_feats, n_hidden, num_heads=num_heads, feat_drop=dropout, activation=activation))
+        self.layers.append(GATConv(in_feats, n_hidden, num_heads=num_heads, feat_drop=dropout, activation=activation, finetune=finetune))
         # hidden layers
         for i in range(n_layers - 1):
-            self.layers.append(GATConv(n_hidden*num_heads, n_hidden, num_heads=num_heads, feat_drop=dropout, activation=activation))
+            self.layers.append(GATConv(n_hidden*num_heads, n_hidden, num_heads=num_heads, feat_drop=dropout, activation=activation, finetune=finetune))
         # output layer
-        self.layers.append(GATConv(n_hidden*num_heads, n_classes, num_heads=1, feat_drop=dropout, activation=None)) # activation None
+        self.layers.append(GATConv(n_hidden*num_heads, n_classes, num_heads=1, feat_drop=dropout, activation=None, finetune=finetune)) # activation None
 
 
         #embed()
