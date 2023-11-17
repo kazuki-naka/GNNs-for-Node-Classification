@@ -22,7 +22,7 @@ class GATConv(nn.Module):
         activation=None,
         allow_zero_in_degree=False,
         bias=True,
-        finetune = False
+        finetune=False
     ):
         super(GATConv, self).__init__()
         self._num_heads = num_heads
@@ -34,14 +34,14 @@ class GATConv(nn.Module):
         if isinstance(in_feats, tuple):
             if finetune: 
                 self.fc_src = lora.Linear(
-                    self._in_feats, out_feats * num_heads, bias=False
+                    self._in_feats, out_feats * num_heads, r=4, bias=False
                 )
                 self.fc_dst = nn.Linear(
                     self._in_feats, out_feats * num_heads, bias=False
                 )
             else: 
                 self.fc_src = nn.Linear(
-                    self._in_feats, out_feats * num_heads, bias=False
+                    self._in_feats, out_feats * num_heads, r=4, bias=False
                 )
                 self.fc_dst = nn.Linear(
                     self._in_feats, out_feats * num_heads, bias=False
@@ -49,7 +49,7 @@ class GATConv(nn.Module):
         else:
             if finetune: 
                 self.fc = lora.Linear(
-                    self._in_feats, out_feats * num_heads, bias=False
+                    self._in_feats, out_feats * num_heads, r=1, bias=False
                 )
             else: 
                 self.fc = nn.Linear(

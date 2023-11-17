@@ -54,9 +54,8 @@ def main():
     # load pre-trained model
     model.load_state_dict(torch.load('weight_base.pth'), strict=False)
     lora.mark_only_lora_as_trainable(model)
-    # update_param_names = ["conv1.lin_src.lora_A", "conv1.lin_src.lora_B", "conv1.lin_dst.lora_A", "conv1.lin_dst.lora_B",
-    #                       "conv2.lin_src.lora_A", "conv2.lin_src.lora_B", "conv2.lin_dst.lora_A", "conv2.lin_dst.lora_B"]
-    update_param_names = ["conv1.lin_src.lora_A", "conv1.lin_src.lora_B"]
+    # update_param_names = ["conv1.lin_src.lora_A", "conv1.lin_src.lora_B"]
+    update_param_names = ["layers.0.fc.lora_A", "layers.0.fc.lora_B"]
     params_to_update = []
     for name, param in model.named_parameters():
         if name in update_param_names:
@@ -82,9 +81,8 @@ def main():
 
     with open('new_result.txt', 'a') as text: 
         print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
-
-    print("Accuracy:{}".format(f1_score(labels[idx_test].cpu(), preds_all[idx_test].cpu(), average='micro')))
-    print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
+        print("Accuracy:{}".format(f1_score(labels[idx_test].cpu(), preds_all[idx_test].cpu(), average='micro')), file=text)
+        print("Total time elapsed: {:.4f}s".format(time.time() - t_total), file=text)
 
 if __name__ == '__main__':
     main()
