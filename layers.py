@@ -3,7 +3,6 @@ from torch import nn
 
 import dgl.function as fn
 from dgl._ffi.base import DGLError
-from dgl.utils import expand_as_pair
 from dgl.nn.functional import edge_softmax
 from dgl.nn.pytorch.utils import Identity
 
@@ -27,33 +26,34 @@ class GATConv(nn.Module):
     ):
         super(GATConv, self).__init__()
         self._num_heads = num_heads
-        self._in_src_feats, self._in_dst_feats = expand_as_pair(in_feats)
+        self._in_feats = in_feats
         self._out_feats = out_feats
         self._allow_zero_in_degree = allow_zero_in_degree
         self.finetune = finetune
+
         if isinstance(in_feats, tuple):
             if finetune: 
                 self.fc_src = lora.Linear(
-                    self._in_src_feats, out_feats * num_heads, bias=False
+                    self._in_feats, out_feats * num_heads, bias=False
                 )
                 self.fc_dst = nn.Linear(
-                    self._in_dst_feats, out_feats * num_heads, bias=False
+                    self._in_feats, out_feats * num_heads, bias=False
                 )
             else: 
                 self.fc_src = nn.Linear(
-                    self._in_src_feats, out_feats * num_heads, bias=False
+                    self._in_feats, out_feats * num_heads, bias=False
                 )
                 self.fc_dst = nn.Linear(
-                    self._in_dst_feats, out_feats * num_heads, bias=False
+                    self._in_feats, out_feats * num_heads, bias=False
                 )
         else:
             if finetune: 
                 self.fc = lora.Linear(
-                    self._in_src_feats, out_feats * num_heads, bias=False
+                    self._in_feats, out_feats * num_heads, bias=False
                 )
             else: 
                 self.fc = nn.Linear(
-                    self._in_src_feats, out_feats * num_heads, bias=False
+                    self._in_feats, out_feats * num_heads, bias=False
                 )
         self.attn_l = nn.Parameter(
             th.FloatTensor(size=(1, num_heads, out_feats))
@@ -68,14 +68,14 @@ class GATConv(nn.Module):
         self.has_linear_res = False
         self.has_explicit_bias = False
         if residual:
-            if self._in_dst_feats != out_feats * num_heads:
+            if self._in_feats != out_feats * num_heads:
                 if finetune: 
                     self.res_fc = lora.Linear(
-                        self._in_dst_feats, num_heads * out_feats, bias=bias
+                        self._in_feats, num_heads * out_feats, bias=bias
                     )
                 else: 
                     self.res_fc = nn.Linear(
-                        self._in_dst_feats, num_heads * out_feats, bias=bias
+                        self._in_feats, num_heads * out_feats, bias=bias
                     )
                 self.has_linear_res = True
             else:

@@ -3,6 +3,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 from layers import GATConv
+from util import cmd
 
 # class GAT(torch.nn.Module):
 #     def __init__(self, in_feats, h_feats, out_feats, finetune=False):
@@ -56,3 +57,6 @@ class GAT(nn.Module):
         for idx in range(len(self.layers)-1):
             h = self.layers[idx](g, h).flatten(1)
         return self.layers[-1](g, h).mean(1)
+    
+    def shift_robust_output(self, idx_train, iid_train, alpha=1): 
+        return alpha * cmd(self.h[idx_train, :], self.h[iid_train, :])

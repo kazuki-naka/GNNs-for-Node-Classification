@@ -3,14 +3,20 @@ import sys
 sys.path.insert(0, os.path.join(os.path.abspath(os.path.dirname(__file__)), os.pardir))
 
 import torch
+import torch.nn  as nn
+import torch.nn.functional as F
 import time
 import loralib as lora
 import torch.nn.utils.prune as prune
 
 import networkx as nx
+import numpy as np
+import dgl
+import pickle as pkl
+from sklearn.metrics import f1_score
 import scipy.sparse as sp
 from models import GAT
-from util import train, load_data, load_synthetic_data, KMM,preprocess_features, device, DATASET
+from util import load_data, load_synthetic_data, KMM, preprocess_features, device, DATASET
 
 path = os.path.abspath(os.path.dirname(os.getcwd())) + "/data"
 
@@ -25,11 +31,14 @@ def main():
     features = torch.FloatTensor(preprocess_features(features)).to(device)
     xent = nn.CrossEntropyLoss(reduction='none')
 
+    ft_size = 1433
+    nb_classes = max(labels).item() + 1
+
     model = GAT(g, ft_size, 32, nb_classes, 2, F.tanh, 0.5, finetune=True)
     optimiser = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=0.0005)
     model.cuda()
 
-    idx_train = torch.LongTensor(pickle.load(open('data/{0}/raw/localized_seeds_{1}.p'.format(DATASET, DATASET), 'rb'))[0])
+    idx_train = torch.LongTensor(pkl.load(open('data/{}/raw/localized_seeds_{}.p'.format(DATASET, DATASET.lower()), 'rb'))[0])
     all_idx = set(range(g.number_of_nodes())) - set(idx_train)
     idx_test = torch.LongTensor(list(all_idx))
     perm = torch.randperm(idx_test.shape[0])
@@ -57,14 +66,14 @@ def main():
             param.requires_grad = False
     t_total = time.time()
     with torch.profiler.profile(profile_memory=True, with_flops=True) as p:
-    for epoch in range(200):
-        model.train()
-        optimiser.zero_grad()
-        logits = model(features)
-        loss = xent(logits[idx_train], labels[idx_train])
-        loss = (torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean() + model.shift_robust_output(idx_train, iid_train)
-        loss.backward()
-        optimiser.step()
+        for epoch in range(200):
+            model.train()
+            optimiser.zero_grad()
+            logits = model(features)
+            loss = xent(logits[idx_train], labels[idx_train])
+            loss = (torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean() + model.shift_robust_output(idx_train, iid_train)
+            loss.backward()
+            optimiser.step()
 
     model.eval()
     embeds = model(features).detach()

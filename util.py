@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 import os
 import copy
+import sys
 
 import numpy as np
 import torch
@@ -8,7 +9,6 @@ from torch import nn
 import torch.nn.functional as F
 from tqdm import tqdm
 import pickle as pkl
-from models import GAT
 
 import networkx as nx
 import scipy.sparse as sp
@@ -76,15 +76,12 @@ def load_data(dataset_str):
     names = ['x', 'y', 'tx', 'ty', 'allx', 'ally', 'graph']
     objects = []
     for i in range(len(names)):
-        with open("data/ind.{}.{}".format(dataset_str, names[i]), 'rb') as f:
+        with open("data/{}/raw/ind.{}.{}".format(dataset_str, dataset_str.lower(), names[i]), 'rb') as f:
             if sys.version_info > (3, 0):
                 objects.append(pkl.load(f, encoding='latin1'))
-            else:
-            #if True:
-                objects.append(pkl.load(f))
 
     x, y, tx, ty, allx, ally, graph = tuple(objects)
-    test_idx_reorder = parse_index_file("data/ind.{}.test.index".format(dataset_str))
+    test_idx_reorder = parse_index_file("data/{}/raw/ind.{}.test.index".format(dataset_str, dataset_str.lower()))
     test_idx_range = np.sort(test_idx_reorder)
     # embed()
     if dataset_str == 'citeseer':
@@ -122,6 +119,12 @@ def load_synthetic_data():
     data = dataset[0].to(device)
 
     return data, dataset.num_node_features, dataset.num_classes
+
+def parse_index_file(filename): 
+    index = []
+    for line in open(filename):
+        index.append(int(line.strip()))
+    return index
 
 def cmd(X, X_test, K=5): 
     x1 = X
