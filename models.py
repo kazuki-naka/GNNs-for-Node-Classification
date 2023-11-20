@@ -36,10 +36,10 @@ class GAT(nn.Module):
         self.g = g
 
         # input layer
-        self.layers.append(GATConv(in_feats, n_hidden, num_heads=num_heads, feat_drop=dropout, activation=activation, finetune=finetune))
+        self.layers.append(GATConv(in_feats, n_hidden, num_heads=num_heads, feat_drop=dropout, activation=activation))
         # hidden layers
         for i in range(n_layers - 1):
-            self.layers.append(GATConv(n_hidden*num_heads, n_hidden, num_heads=num_heads, feat_drop=dropout, activation=activation, finetune=finetune))
+            self.layers.append(GATConv(n_hidden*num_heads, n_hidden, num_heads=num_heads, feat_drop=dropout, activation=activation))
         # output layer
         self.layers.append(GATConv(n_hidden*num_heads, n_classes, num_heads=1, feat_drop=dropout, activation=None, finetune=finetune)) # activation None
 
@@ -58,5 +58,5 @@ class GAT(nn.Module):
             h = self.layers[idx](g, h).flatten(1)
         return self.layers[-1](g, h).mean(1)
     
-    def shift_robust_output(self, idx_train, iid_train, alpha=1): 
-        return alpha * cmd(self.h[idx_train, :], self.h[iid_train, :])
+    def shift_robust_output(self, idx_train, iid_train, K, alpha=1): 
+        return alpha * cmd(self.h[idx_train, :], self.h[iid_train, :], K)

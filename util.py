@@ -16,20 +16,21 @@ import scipy.sparse as sp
 from torch_geometric.datasets import FakeDataset
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+ft_size = 1433
 DATASET = "Cora"
 
 @torch.no_grad()
-def test(model, data):
-    model.eval()
-    out = model(data)
-    loss_function = torch.nn.CrossEntropyLoss().to(device)
-    loss = loss_function(out[data.y], data.y[data.y])
-    _, pred = out.max(dim=1)
-    correct = int(pred[data.y].eq(data.y[data.y]).sum().item())
-    acc = correct / int(data.y.sum())
-    model.train()
+# def test(model, data):
+#     model.eval()
+#     out = model(data)
+#     loss_function = torch.nn.CrossEntropyLoss().to(device)
+#     loss = loss_function(out[data.y], data.y[data.y])
+#     _, pred = out.max(dim=1)
+#     correct = int(pred[data.y].eq(data.y[data.y]).sum().item())
+#     acc = correct / int(data.y.sum())
+#     model.train()
 
-    return loss.item(), acc
+#     return loss.item(), acc
 
 
 # def train(model, data):
@@ -105,9 +106,9 @@ def load_data(dataset_str):
     idx_test = test_idx_range.tolist()
     #embed()
     #idx_train = range(len(y))
-    if dataset_str == 'pubmed':
+    if dataset_str.lower() == 'pubmed':
         idx_train = range(10000)
-    elif dataset_str == 'cora':
+    elif dataset_str.lower() == 'cora':
         idx_train = range(1500)
     else:
         idx_train = range(1000)
@@ -126,7 +127,7 @@ def parse_index_file(filename):
         index.append(int(line.strip()))
     return index
 
-def cmd(X, X_test, K=5): 
+def cmd(X, X_test, K): 
     x1 = X
     x2 = X_test
     mx1 = x1.mean(0)
@@ -161,6 +162,7 @@ def pairwise_distances(x, y=None):
     dist = x_norm + y_norm - 2.0 * torch.mm(x, y_t)
     return torch.clamp(dist, 0.0, np.inf)
 
+# find the appropriate weights which minimize MMD distance
 def KMM(X,Xtest,_A=None, _sigma=1e1,beta=0.2):
 
     H = torch.exp(- 1e0 * pairwise_distances(X)) + torch.exp(- 1e-1 * pairwise_distances(X)) + torch.exp(- 1e-3 * pairwise_distances(X))
@@ -168,7 +170,6 @@ def KMM(X,Xtest,_A=None, _sigma=1e1,beta=0.2):
     z = torch.exp(- 1e0 * pairwise_distances(Xtest, Xtest)) + torch.exp(- 1e-1 * pairwise_distances(Xtest, Xtest)) + torch.exp(- 1e-3 * pairwise_distances(Xtest, Xtest))
     H /= 3
     f /= 3
-    MMD_dist = H.mean() - 2 * f.mean() + z.mean()
     
     nsamples = X.shape[0]
     f = - X.shape[0] / Xtest.shape[0] * f.matmul(torch.ones((Xtest.shape[0],1)))
@@ -180,7 +181,7 @@ def KMM(X,Xtest,_A=None, _sigma=1e1,beta=0.2):
     from cvxopt import matrix, solvers
     solvers.options['show_progress'] = False
     sol=solvers.qp(matrix(H.numpy().astype(np.double)), matrix(f.numpy().astype(np.double)), matrix(G), matrix(h), matrix(_A), matrix(b))
-    return np.array(sol['x']), MMD_dist.item()
+    return np.array(sol['x'])
 
 def preprocess_features(features): 
     rowsum = np.array(features.sum(1))
