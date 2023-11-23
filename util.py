@@ -13,107 +13,119 @@ import pickle as pkl
 import networkx as nx
 import scipy.sparse as sp
 
-from torch_geometric.datasets import FakeDataset
+from torch_geometric.datasets import FakeDataset, Planetoid
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 ft_size = 1433
-DATASET = "Cora"
+DATASET = "PubMed"
 
 @torch.no_grad()
-# def test(model, data):
-#     model.eval()
-#     out = model(data)
-#     loss_function = torch.nn.CrossEntropyLoss().to(device)
-#     loss = loss_function(out[data.y], data.y[data.y])
-#     _, pred = out.max(dim=1)
-#     correct = int(pred[data.y].eq(data.y[data.y]).sum().item())
-#     acc = correct / int(data.y.sum())
-#     model.train()
+def test(model, data):
+    model.eval()
+    out = model(data)
+    loss_function = torch.nn.CrossEntropyLoss().to(device)
+    loss = loss_function(out[data.val_mask], data.y[data.val_mask])
+    _, pred = out.max(dim=1)
+    correct = int(pred[data.test_mask].eq(data.y[data.test_mask]).sum().item())
+    acc = correct / int(data.test_mask.sum())
+    model.train()
 
-#     return loss.item(), acc
+    return loss.item(), acc
 
 
-# def train(model, data):
-#     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
-#     loss_function = torch.nn.CrossEntropyLoss().to(device)
-#     min_val_loss = np.Inf
-#     best_model = None
-#     min_epochs = 5
+def train(model, data):
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
+    loss_function = torch.nn.CrossEntropyLoss().to(device)
+    min_val_loss = np.Inf
+    best_model = None
+    min_epochs = 5
 
-#     # Using torch profiler for how much CPU memory has been used
-#     with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
-#         model.train()
-#         final_test_acc = 0
-#         for epoch in tqdm(range(200)):
-#             out = model(data)
-#             optimizer.zero_grad()
-#             loss = loss_function(out[data.y], data.y[data.y])
-#             loss.backward()
-#             optimizer.step()
+    # Using torch profiler for how much CPU memory has been used
+    with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
+        model.train()
+        final_test_acc = 0
+        for epoch in tqdm(range(200)):
+            out = model(data)
+            optimizer.zero_grad()
+            loss = loss_function(out[data.train_mask], data.y[data.train_mask])
+            loss.backward()
+            optimizer.step()
 
-#             # validation
-#             val_loss, test_acc = test(model, data)
-#             if val_loss < min_val_loss and epoch + 1 > min_epochs:
-#                 min_val_loss = val_loss
-#                 final_test_acc = test_acc
-#                 best_model = copy.deepcopy(model)
-#             tqdm.write('Epoch {:03d} train_loss {:.4f} val_loss {:.4f} test_acc {:.4f}'
-#                     .format(epoch, loss.item(), val_loss, test_acc))
+            # validation
+            val_loss, test_acc = test(model, data)
+            if val_loss < min_val_loss and epoch + 1 > min_epochs:
+                min_val_loss = val_loss
+                final_test_acc = test_acc
+                best_model = copy.deepcopy(model)
+            tqdm.write('Epoch {:03d} train_loss {:.4f} val_loss {:.4f} test_acc {:.4f}'
+                    .format(epoch, loss.item(), val_loss, test_acc))
     
-    # with open('result.txt', 'a') as text: 
-    #     print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
+    with open('new_result.txt', 'a') as text: 
+        print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
 
-    # return best_model, final_test_acc
+    return best_model, final_test_acc
 
-# def load_data(path, name):
-#     dataset = Planetoid(root=path, name=name)
-#     data = dataset[0].to(device)
+def load_data(path, name):
+    dataset = Planetoid(root=path, name=name)
+    data = dataset[0].to(device)
 
-#     print(data)
-
-#     return data, dataset.num_node_features, dataset.num_classes
-
-def load_data(dataset_str): 
-    names = ['x', 'y', 'tx', 'ty', 'allx', 'ally', 'graph']
+    names = ['tx', 'allx', 'graph']
     objects = []
-    for i in range(len(names)):
-        with open("data/{}/raw/ind.{}.{}".format(dataset_str, dataset_str.lower(), names[i]), 'rb') as f:
+    for i in range(len(objects)): 
+        with open("data/{}/raw/ind.{}.{}".format(name, name.lower(), name[i]), 'rb') as f:
             if sys.version_info > (3, 0):
                 objects.append(pkl.load(f, encoding='latin1'))
+    
+    tx, allx, graph = tuple(objects)
 
-    x, y, tx, ty, allx, ally, graph = tuple(objects)
-    test_idx_reorder = parse_index_file("data/{}/raw/ind.{}.test.index".format(dataset_str, dataset_str.lower()))
+    test_idx_reorder = parse_index_file("data/{}/raw/ind.{}.test.index".format(name, name.lower()))
     test_idx_range = np.sort(test_idx_reorder)
-    # embed()
-    if dataset_str == 'citeseer':
-        # Fix citeseer dataset (there are some isolated nodes in the graph)
-        # Find isolated nodes, add them as zero-vecs into the right position
-        test_idx_range_full = range(min(test_idx_reorder), max(test_idx_reorder)+1)
-        tx_extended = sp.lil_matrix((len(test_idx_range_full), x.shape[1]))
-        tx_extended[test_idx_range-min(test_idx_range), :] = tx
-        tx = tx_extended
-        ty_extended = np.zeros((len(test_idx_range_full), y.shape[1]))
-        ty_extended[test_idx_range-min(test_idx_range), :] = ty
-        ty = ty_extended
-    # embed()
-    features = sp.vstack((allx, tx)).tolil()
-    features[test_idx_reorder, :] = features[test_idx_range, :]
-    adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
-    #embed()
-    labels = np.vstack((ally, ty))
-    labels[test_idx_reorder, :] = labels[test_idx_range, :]
 
-    idx_test = test_idx_range.tolist()
-    #embed()
-    #idx_train = range(len(y))
-    if dataset_str.lower() == 'pubmed':
-        idx_train = range(10000)
-    elif dataset_str.lower() == 'cora':
-        idx_train = range(1500)
-    else:
-        idx_train = range(1000)
-    idx_val = range(len(y), len(y)+500)
-    return adj, features, labels, idx_train, idx_val, idx_test
+    adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
+    print("type of adj : ", type(adj))
+    return data, dataset.num_node_features, dataset.num_classes, adj
+
+# def load_data(dataset_str): 
+#     names = ['x', 'y', 'tx', 'ty', 'allx', 'ally', 'graph']
+#     objects = []
+#     for i in range(len(names)):
+#         with open("data/{}/raw/ind.{}.{}".format(dataset_str, dataset_str.lower(), names[i]), 'rb') as f:
+#             if sys.version_info > (3, 0):
+#                 objects.append(pkl.load(f, encoding='latin1'))
+
+#     x, y, tx, ty, allx, ally, graph = tuple(objects)
+#     test_idx_reorder = parse_index_file("data/{}/raw/ind.{}.test.index".format(dataset_str, dataset_str.lower()))
+#     test_idx_range = np.sort(test_idx_reorder)
+#     # embed()
+#     if dataset_str == 'citeseer':
+#         # Fix citeseer dataset (there are some isolated nodes in the graph)
+#         # Find isolated nodes, add them as zero-vecs into the right position
+#         test_idx_range_full = range(min(test_idx_reorder), max(test_idx_reorder)+1)
+#         tx_extended = sp.lil_matrix((len(test_idx_range_full), x.shape[1]))
+#         tx_extended[test_idx_range-min(test_idx_range), :] = tx
+#         tx = tx_extended
+#         ty_extended = np.zeros((len(test_idx_range_full), y.shape[1]))
+#         ty_extended[test_idx_range-min(test_idx_range), :] = ty
+#         ty = ty_extended
+#     # embed()
+#     features = sp.vstack((allx, tx)).tolil()
+#     features[test_idx_reorder, :] = features[test_idx_range, :]
+#     adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
+#     #embed()
+#     labels = np.vstack((ally, ty))
+#     labels[test_idx_reorder, :] = labels[test_idx_range, :]
+
+#     idx_test = test_idx_range.tolist()
+#     #embed()
+#     #idx_train = range(len(y))
+#     if dataset_str.lower() == 'pubmed':
+#         idx_train = range(10000)
+#     elif dataset_str.lower() == 'cora':
+#         idx_train = range(1500)
+#     else:
+#         idx_train = range(1000)
+#     idx_val = range(len(y), len(y)+500)
+#     return adj, features, labels, idx_train, idx_val, idx_test
 
 def load_synthetic_data(): 
     dataset = FakeDataset(num_channels=1433, num_classes=7, task='node')

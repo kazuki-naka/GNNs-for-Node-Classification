@@ -65,49 +65,49 @@ def main():
         else:
             param.requires_grad = False
     t_total = time.time()
-    cmd_scores = []
-    f1_scores = []
-    # Make graph
-    for i in range(5): 
-        cmd_score = cmd(Z_train, Z_test, i)
-        cmd_scores.append(cmd_score)
+    # cmd_scores = []
+    # f1_scores = []
+    # # Make graph
+    # for i in range(5): 
+    #     cmd_score = cmd(Z_train, Z_test, i)
+    #     cmd_scores.append(cmd_score)
+    #     for epoch in range(200):
+    #         model.train()
+    #         optimiser.zero_grad()
+    #         logits = model(features)
+    #         loss = xent(logits[idx_train], labels[idx_train])
+    #         loss = (torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean() + model.shift_robust_output(idx_train, iid_train, K=i)
+    #         loss.backward()
+    #         optimiser.step()
+    #     model.eval()
+    #     embeds = model(features).detach()
+    #     logits = embeds[idx_test]
+    #     preds_all = torch.argmax(embeds, dim=1)
+    #     f1 = f1_score(labels[idx_test].cpu(), preds_all[idx_test].cpu(), average='micro')
+    #     f1_scores.append(f1)
+
+    # plt.scatter(cmd_scores, f1_scores)
+    # plt.savefig("sample.png")
+    with torch.profiler.profile(profile_memory=True, with_flops=True) as p:
         for epoch in range(200):
             model.train()
             optimiser.zero_grad()
             logits = model(features)
             loss = xent(logits[idx_train], labels[idx_train])
-            loss = (torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean() + model.shift_robust_output(idx_train, iid_train, K=i)
+            loss = (torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean() + model.shift_robust_output(idx_train, iid_train, K=5)
             loss.backward()
             optimiser.step()
-        model.eval()
-        embeds = model(features).detach()
-        logits = embeds[idx_test]
-        preds_all = torch.argmax(embeds, dim=1)
-        f1 = f1_score(labels[idx_test].cpu(), preds_all[idx_test].cpu(), average='micro')
-        f1_scores.append(f1)
+    with open('new_result.txt', 'a') as text: 
+        print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
 
-    plt.scatter(cmd_scores, f1_scores)
-    plt.savefig("sample.png")
-    # with torch.profiler.profile(profile_memory=True, with_flops=True) as p:
-    # for epoch in range(200):
-    #     model.train()
-    #     optimiser.zero_grad()
-    #     logits = model(features)
-    #     loss = xent(logits[idx_train], labels[idx_train])
-    #     loss = (torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean() + model.shift_robust_output(idx_train, iid_train, K=5)
-    #     loss.backward()
-    #     optimiser.step()
-    # with open('new_result.txt', 'a') as text: 
-    #     print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
+    model.eval()
+    embeds = model(features).detach()
+    logits = embeds[idx_test]
+    preds_all = torch.argmax(embeds, dim=1)
 
-    # model.eval()
-    # embeds = model(features).detach()
-    # logits = embeds[idx_test]
-    # preds_all = torch.argmax(embeds, dim=1)
-
-    # with open('new_result.txt', 'a') as text: 
-    print("Accuracy:{}".format(f1_score(labels[idx_test].cpu(), preds_all[idx_test].cpu(), average='micro')))
-    print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
+    with open('new_result.txt', 'a') as text: 
+        print("Accuracy:{}".format(f1_score(labels[idx_test].cpu(), preds_all[idx_test].cpu(), average='micro')))
+        print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
 
 
 if __name__ == '__main__':

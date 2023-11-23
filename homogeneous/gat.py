@@ -39,8 +39,6 @@ def main():
     idx_train = torch.LongTensor(pkl.load(open('data/{}/raw/localized_seeds_{}.p'.format(DATASET, DATASET.lower()), 'rb'))[0])
     all_idx = set(range(g.number_of_nodes())) - set(idx_train)
     idx_test = torch.LongTensor(list(all_idx))
-    perm = torch.randperm(idx_test.shape[0])
-    iid_train = idx_test[perm[:idx_train.shape[0]]]
 
     # Z_train = torch.FloatTensor(adj[idx_train.tolist(), :].todense())
     # Z_test = torch.FloatTensor(adj[iid_train.tolist(), :].todense())
@@ -61,6 +59,9 @@ def main():
             optimiser.step()
     with open('new_result.txt', 'a') as text: 
         print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
+    
+    # save model
+    torch.save(model.state_dict(), 'weight_base.pth')
 
     model.eval()
     embeds = model(features).detach()
