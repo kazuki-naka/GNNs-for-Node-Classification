@@ -19,7 +19,7 @@ from util import load_data, load_synthetic_data, KMM, preprocess_features, devic
 path = os.path.abspath(os.path.dirname(os.getcwd())) + "/data"
 
 def main():
-    dataset, num_in_feats, num_out_feats, adj = load_data(path, name=DATASET)
+    dataset, num_in_feats, num_out_feats = load_data(path, name=DATASET)
     model = GAT(num_in_feats, 64, num_out_feats).to(device)
     model, test_acc = train(model, dataset)
     # save model

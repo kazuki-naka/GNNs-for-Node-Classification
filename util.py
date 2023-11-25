@@ -68,22 +68,7 @@ def train(model, data):
 def load_data(path, name):
     dataset = Planetoid(root=path, name=name)
     data = dataset[0].to(device)
-
-    names = ['tx', 'allx', 'graph']
-    objects = []
-    for i in range(len(objects)): 
-        with open("data/{}/raw/ind.{}.{}".format(name, name.lower(), name[i]), 'rb') as f:
-            if sys.version_info > (3, 0):
-                objects.append(pkl.load(f, encoding='latin1'))
-    
-    tx, allx, graph = tuple(objects)
-
-    test_idx_reorder = parse_index_file("data/{}/raw/ind.{}.test.index".format(name, name.lower()))
-    test_idx_range = np.sort(test_idx_reorder)
-
-    adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
-    print("type of adj : ", type(adj))
-    return data, dataset.num_node_features, dataset.num_classes, adj
+    return data, dataset.num_node_features, dataset.num_classes
 
 # def load_data(dataset_str): 
 #     names = ['x', 'y', 'tx', 'ty', 'allx', 'ally', 'graph']
