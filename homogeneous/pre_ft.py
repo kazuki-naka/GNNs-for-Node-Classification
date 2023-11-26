@@ -32,8 +32,6 @@ def main():
     idx_train = dataset.train_mask
     perm = torch.randperm(dataset.test_mask.shape[0])
 
-    # independent and identically distributed sampling --> distribution shift
-
     # independent and identically distributed sampling
     iid_train = dataset.test_mask[perm[:idx_train.shape[0]]]
     dataset.test_mask = iid_train
@@ -48,7 +46,12 @@ def main():
             param.requires_grad = False
     model, test_acc = train(model, dataset)
 
+    X = model.h_out[idx_train, :]
+    X_test = model.h_out[iid_train, :]
+    value_cmd = cmd(X, X_test, K=5)
+
     with open("new_result.txt", "a") as text: 
         print('test acc:', test_acc, file=text)
+        print('value of cmd:', value_cmd, file=text)
 if __name__ == '__main__':
     main()
