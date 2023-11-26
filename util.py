@@ -16,7 +16,6 @@ import scipy.sparse as sp
 from torch_geometric.datasets import FakeDataset, Planetoid
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-ft_size = 1433
 DATASET = "PubMed"
 
 @torch.no_grad()
@@ -118,11 +117,11 @@ def load_synthetic_data():
 
     return data, dataset.num_node_features, dataset.num_classes
 
-def parse_index_file(filename): 
-    index = []
-    for line in open(filename):
-        index.append(int(line.strip()))
-    return index
+# def parse_index_file(filename): 
+#     index = []
+#     for line in open(filename):
+#         index.append(int(line.strip()))
+#     return index
 
 def cmd(X, X_test, K): 
     x1 = X
