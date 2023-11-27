@@ -13,10 +13,12 @@ import pickle as pkl
 import networkx as nx
 import scipy.sparse as sp
 
+import matplotlib.pyplot as plt
+
 from torch_geometric.datasets import FakeDataset, Planetoid
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-DATASET = "PubMed"
+DATASET = "Cora"
 
 @torch.no_grad()
 def test(model, data):
@@ -32,37 +34,42 @@ def test(model, data):
     return loss.item(), acc
 
 
-def train(model, data):
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
-    loss_function = torch.nn.CrossEntropyLoss().to(device)
-    min_val_loss = np.Inf
-    best_model = None
-    min_epochs = 5
+# def train(model, data, idx_train, iid_train):
+#     plot_x, plot_y = [],[]
+#     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
+#     loss_function = torch.nn.CrossEntropyLoss().to(device)
+#     min_val_loss = np.Inf
+#     best_model = None
+#     min_epochs = 5
+#     # Using torch profiler for how much CPU memory has been used
+#     with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
+#         model.train()
+#         final_test_acc = 0
+#         for epoch in tqdm(range(200)):
+#             out = model(data)
+#             optimizer.zero_grad()
+#             loss = loss_function(out[idx_train], data.y[iid_train])
+#             loss.backward()
+#             optimizer.step()
 
-    # Using torch profiler for how much CPU memory has been used
-    with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
-        model.train()
-        final_test_acc = 0
-        for epoch in tqdm(range(200)):
-            out = model(data)
-            optimizer.zero_grad()
-            loss = loss_function(out[data.train_mask], data.y[data.train_mask])
-            loss.backward()
-            optimizer.step()
+#             # Test
+#             val_loss, test_acc = test(model, data)
+#             if val_loss < min_val_loss and epoch + 1 > min_epochs:
+#                 min_val_loss = val_loss
+#                 final_test_acc = test_acc
+#                 best_model = copy.deepcopy(model)
+#             tqdm.write('Epoch {:03d} train_loss {:.4f} val_loss {:.4f} test_acc {:.4f}'
+#                     .format(epoch, loss.item(), val_loss, test_acc))
+            
+#             plot_x.append(cmd(model.h_out[idx_train, :], model.h_out[iid_train, :], K=5).item())
+#             plot_y.append(test_acc)
+#     with open('new_result.txt', 'a') as text: 
+#         print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
+#     plt.scatter(plot_x, plot_y)
+#     plt.xlim(0, 5)
+#     plt.savefig("sample.png")
 
-            # validation
-            val_loss, test_acc = test(model, data)
-            if val_loss < min_val_loss and epoch + 1 > min_epochs:
-                min_val_loss = val_loss
-                final_test_acc = test_acc
-                best_model = copy.deepcopy(model)
-            tqdm.write('Epoch {:03d} train_loss {:.4f} val_loss {:.4f} test_acc {:.4f}'
-                    .format(epoch, loss.item(), val_loss, test_acc))
-    
-    with open('new_result.txt', 'a') as text: 
-        print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
-
-    return best_model, final_test_acc
+#     return best_model, final_test_acc
 
 def load_data(path, name):
     dataset = Planetoid(root=path, name=name)
@@ -189,3 +196,10 @@ def preprocess_features(features):
         return features.todense()
     except:
         return features
+    
+# def MMD(X, Xtest): 
+#     H = torch.exp(- 1e0 * pairwise_distances(X)) + torch.exp(- 1e-1 * pairwise_distances(X)) + torch.exp(- 1e-3 * pairwise_distances(X))
+#     f = torch.exp(- 1e0 * pairwise_distances(X, Xtest)) + torch.exp(- 1e-1 * pairwise_distances(X, Xtest)) + torch.exp(- 1e-3 * pairwise_distances(X, Xtest))
+#     z = torch.exp(- 1e0 * pairwise_distances(Xtest, Xtest)) + torch.exp(- 1e-1 * pairwise_distances(Xtest, Xtest)) + torch.exp(- 1e-3 * pairwise_distances(Xtest, Xtest))
+#     MMD_dist = H.mean() - 2 * f.mean() + z.mean()
+#     return MMD_dist

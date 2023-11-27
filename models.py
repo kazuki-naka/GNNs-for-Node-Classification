@@ -4,7 +4,6 @@ import torch.nn.functional as F
 from torch import nn
 from layers import GATConv
 # from torch_geometric.nn import GATConv
-from util import cmd
 
 class GAT(torch.nn.Module):
     def __init__(self, in_feats, h_feats, out_feats, finetune=False):
