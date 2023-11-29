@@ -61,32 +61,36 @@ def main():
     # Using torch profiler for how much CPU memory has been used
     with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
         model.train()
-        for epoch in tqdm(range(200)):
-            out = model(dataset)
-            optimizer.zero_grad()
-            loss = loss_function(out[idx_train], dataset.y[iid_train])
-            kmm_weight = KMM(model.h_out[idx_train, :], model.h_out[iid_train, :], label_balance_constraints, beta=0.2)
-            print((torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean())
-            print(cmd(model.h_out[idx_train, :], model.h_out[iid_train, :], K=5))
-            sys.exit(1)
-            loss = (torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean() + cmd(model.h_out[idx_train, :], model.h_out[iid_train, :], K=5)
-            loss.backward()
-            optimizer.step()
-
-            # Test
-            val_loss, test_acc = test(model, dataset)
-            tqdm.write('Epoch {:03d} train_loss {:.4f} val_loss {:.4f} test_acc {:.4f}'
-                    .format(epoch, loss.item(), val_loss, test_acc))
-            
-            plot_x.append(cmd(model.h_out[idx_train, :], model.h_out[iid_train, :], K=5).item())
-            plot_y.append(test_acc)
     with open('new_result.txt', 'a') as text: 
+        print("train(fine-tuning) : ", file=text)
         print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
-    plt.scatter(plot_x, plot_y)
-    plt.xlim(0, 5)
-    plt.savefig("sample.png")
+    for epoch in tqdm(range(200)):
+        out = model(dataset)
+        optimizer.zero_grad()
+        loss = loss_function(out[idx_train], dataset.y[iid_train])
+        # kmm_weight = KMM(model.h_out[idx_train, :], model.h_out[iid_train, :], label_balance_constraints, beta=0.2)
+        # print((torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean())
+        # print(cmd(model.h_out[idx_train, :], model.h_out[iid_train, :], K=5))
+        # sys.exit(1)
+        # loss = (torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean() + cmd(model.h_out[idx_train, :], model.h_out[iid_train, :], K=5)
+        loss.backward()
+        optimizer.step()
 
-    with open("new_result.txt", "a") as text: 
+        # Test
+        # val_loss, test_acc = test(model, dataset)
+        # tqdm.write('Epoch {:03d} train_loss {:.4f} val_loss {:.4f} test_acc {:.4f}'
+        #         .format(epoch, loss.item(), val_loss, test_acc))
+        
+        # plot_x.append(cmd(model.h_out[idx_train, :], model.h_out[iid_train, :], K=5).item())
+        # plot_y.append(test_acc)
+    # plt.scatter(plot_x, plot_y)
+    # plt.xlim(0, 5)
+    # plt.savefig("sample.png")
+    with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
+        test_acc = test(model, dataset)
+    with open("new_result.txt", "a") as text:  
+        print("test(fine-tuning) : ", file=text)
+        print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
         print("test acc: ", test_acc,  file=text)
         print("\n", file=text)
 if __name__ == '__main__':

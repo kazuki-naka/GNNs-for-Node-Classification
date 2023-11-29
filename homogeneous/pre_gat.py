@@ -26,27 +26,7 @@ def main():
     model = GAT(num_in_feats, 64, num_out_feats).to(device)
     with open("new_result.txt", "a") as text: 
         print('pre-train', file = text)
-    
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
-    loss_function = torch.nn.CrossEntropyLoss().to(device)
-    # Using torch profiler for how much CPU memory has been used
-    with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
-        model.train()
-        for epoch in tqdm(range(200)):
-            out = model(dataset)
-            optimizer.zero_grad()
-            loss = loss_function(out[dataset.train_mask], dataset.y[dataset.train_mask])
-            loss.backward()
-            optimizer.step()
-
-            # Test
-            val_loss, test_acc = test(model, dataset)
-            tqdm.write('Epoch {:03d} train_loss {:.4f} val_loss {:.4f} test_acc {:.4f}'
-                    .format(epoch, loss.item(), val_loss, test_acc))
-            
-    with open('new_result.txt', 'a') as text: 
-        print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
-
+    test_acc = train(model, data)
     # save model
     torch.save(model.state_dict(), 'weight_base.pth')
     with open("new_result.txt", "a") as text: 
