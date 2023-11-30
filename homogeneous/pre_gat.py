@@ -14,19 +14,18 @@ import scipy.sparse as sp
 import numpy as np
 import dgl
 import pickle as pkl
-from sklearn.metrics import f1_score
 
 from models import GAT
-from util import load_data, load_synthetic_data, KMM, preprocess_features, device, DATASET, test, cmd
+from util import load_data, load_synthetic_data, KMM, preprocess_features, device, DATASET, train, cmd
 
 path = os.path.abspath(os.path.dirname(os.getcwd())) + "/data"
 
 def main():
     dataset, num_in_feats, num_out_feats = load_data(path, name=DATASET)
     model = GAT(num_in_feats, 64, num_out_feats).to(device)
-    with open("new_result.txt", "a") as text: 
+    with open("new_result.txt", "w") as text: 
         print('pre-train', file = text)
-    test_acc = train(model, data)
+    model, test_acc = train(model, dataset)
     # save model
     torch.save(model.state_dict(), 'weight_base.pth')
     with open("new_result.txt", "a") as text: 

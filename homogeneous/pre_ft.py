@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 import time
 import loralib as lora
-import torch.nn.utils.prune as prune
+import random
 
 import networkx as nx
 import numpy as np
@@ -28,15 +28,17 @@ def main():
     dataset, num_in_feats, num_out_feats = load_data(path, name=DATASET)
     model = GAT(num_in_feats, 64, num_out_feats, finetune = True).to(device)
 
-    idx_train = torch.LongTensor(pkl.load(open('data/{}/raw/localized_seeds_{}.p'.format(DATASET, DATASET.lower()), 'rb'))[0])
-    all_idx = set(range(dataset.x.shape[0])) - set(idx_train)
-    idx_test = torch.LongTensor(list(all_idx))
-    perm = torch.randperm(idx_test.shape[0])
-    iid_train = idx_test[perm[:idx_train.shape[0]]]
+    rand_list = random.sample(range(len(dataset.train_mask)), k=140)
 
-    label_balance_constraints = np.zeros((dataset.y.max().item()+1, len(idx_train)))
-    for i, idx in enumerate(idx_train):
-        label_balance_constraints[dataset.y[idx], i] = 1
+    for i in range(len(dataset.train_mask)): 
+        if i not in rand_list and dataset.train_mask[i]: 
+            dataset.train_mask[i] = False
+        elif i in rand_list and not dataset.train_mask[i]: 
+            dataset.train_mask[i] = True
+
+    # label_balance_constraints = np.zeros((dataset.y.max().item()+1, nodes))
+    # for i, idx in enumerate(idx_train):
+    #     label_balance_constraints[dataset.y[idx], i] = 1
 
     # load pre-trained model
     model.load_state_dict(torch.load('weight_base.pth'), strict=False)
@@ -61,21 +63,22 @@ def main():
     # Using torch profiler for how much CPU memory has been used
     with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
         model.train()
+        for epoch in tqdm(range(200)):
+            out = model(dataset)
+            optimizer.zero_grad()
+            loss = loss_function(out[dataset.train_mask], dataset.y[dataset.train_mask])
+            # kmm_weight = KMM(model.h_out[idx_train, :], model.h_out[iid_train, :], label_balance_constraints, beta=0.2)
+            # print((torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean())
+            # print(cmd(model.h_out[idx_train, :], model.h_out[iid_train, :], K=5))
+            # sys.exit(1)
+            # loss = (torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean() + cmd(model.h_out[idx_train, :], model.h_out[iid_train, :], K=5)
+            loss.backward()
+            optimizer.step()
+
     with open('new_result.txt', 'a') as text: 
         print("train(fine-tuning) : ", file=text)
         print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
-    for epoch in tqdm(range(200)):
-        out = model(dataset)
-        optimizer.zero_grad()
-        loss = loss_function(out[idx_train], dataset.y[iid_train])
-        # kmm_weight = KMM(model.h_out[idx_train, :], model.h_out[iid_train, :], label_balance_constraints, beta=0.2)
-        # print((torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean())
-        # print(cmd(model.h_out[idx_train, :], model.h_out[iid_train, :], K=5))
-        # sys.exit(1)
-        # loss = (torch.Tensor(kmm_weight).reshape(-1).cuda() * (loss)).mean() + cmd(model.h_out[idx_train, :], model.h_out[iid_train, :], K=5)
-        loss.backward()
-        optimizer.step()
-
+        print("test(fine-tuning) : ", file=text)
         # Test
         # val_loss, test_acc = test(model, dataset)
         # tqdm.write('Epoch {:03d} train_loss {:.4f} val_loss {:.4f} test_acc {:.4f}'
@@ -86,12 +89,10 @@ def main():
     # plt.scatter(plot_x, plot_y)
     # plt.xlim(0, 5)
     # plt.savefig("sample.png")
-    with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
-        test_acc = test(model, dataset)
+    val_loss, test_acc = test(model, dataset)
     with open("new_result.txt", "a") as text:  
-        print("test(fine-tuning) : ", file=text)
-        print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
         print("test acc: ", test_acc,  file=text)
+        # print("value of cmd : ", cmd(model.h_out[idx_train, :], model.h_out[iid_train, :], K=5).item(), file=text)
         print("\n", file=text)
 if __name__ == '__main__':
     main()

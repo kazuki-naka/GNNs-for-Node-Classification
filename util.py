@@ -22,50 +22,53 @@ DATASET = "Cora"
 
 @torch.no_grad()
 def test(model, data):
-    model.eval()
-    out = model(data)
-    loss_function = torch.nn.CrossEntropyLoss().to(device)
-    loss = loss_function(out[data.val_mask], data.y[data.val_mask])
-    _, pred = out.max(dim=1)
-    correct = int(pred[data.test_mask].eq(data.y[data.test_mask]).sum().item())
-    acc = correct / int(data.test_mask.sum())
-    model.train()
+    with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
+        model.eval()
+        out = model(data)
+        loss_function = torch.nn.CrossEntropyLoss().to(device)
+        loss = loss_function(out[data.val_mask], data.y[data.val_mask])
+        _, pred = out.max(dim=1)
+        correct = int(pred[data.test_mask].eq(data.y[data.test_mask]).sum().item())
+        acc = correct / int(data.test_mask.sum())
+        model.train()
+    with open("new_result.txt", "a") as text: 
+        print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
 
     return loss.item(), acc
 
 
-def train(model, data, idx_train, iid_train):
+def train(model, data):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
     loss_function = torch.nn.CrossEntropyLoss().to(device)
     min_val_loss = np.Inf
     best_model = None
     min_epochs = 5
+
     # Using torch profiler for how much CPU memory has been used
     with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
         model.train()
+        for epoch in tqdm(range(200)):
+            out = model(data)
+            optimizer.zero_grad()
+            loss = loss_function(out[data.train_mask], data.y[data.train_mask])
+            loss.backward()
+            optimizer.step()  
+            val_loss, test_acc = test(model, data)
+            if val_loss < min_val_loss and epoch + 1 > min_epochs:
+                min_val_loss = val_loss
+                best_model = copy.deepcopy(model)
+            tqdm.write('Epoch {:03d} train_loss {:.4f} val_loss {:.4f} test_acc {:.4f}'
+                    .format(epoch, loss.item(), val_loss, test_acc))
     with open('new_result.txt', 'a') as text: 
         print("train memory : ", file=text)
         print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
 
-    final_test_acc = 0
-    for epoch in tqdm(range(200)):
-        out = model(data)
-        optimizer.zero_grad()
-        loss = loss_function(out[idx_train], data.y[iid_train])
-        loss.backward()
-        optimizer.step()
-    
-    with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
-        val_loss, test_acc = test(model, data)
-    with open('new_result.txt', 'a') as text: 
-        print("test memory : ")
-        print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
-
-    return test_acc
+    return best_model, test_acc
 
 def load_data(path, name):
     dataset = Planetoid(root=path, name=name)
     data = dataset[0].to(device)
+    
     return data, dataset.num_node_features, dataset.num_classes
 
 # def load_data(dataset_str): 
@@ -195,3 +198,11 @@ def preprocess_features(features):
 #     z = torch.exp(- 1e0 * pairwise_distances(Xtest, Xtest)) + torch.exp(- 1e-1 * pairwise_distances(Xtest, Xtest)) + torch.exp(- 1e-3 * pairwise_distances(Xtest, Xtest))
 #     MMD_dist = H.mean() - 2 * f.mean() + z.mean()
 #     return MMD_dist
+
+def train_val_split(data, val_ratio: float = 0.15, test_ratio: float = 0.15): 
+    rnd = torch.rand(len(data.x))
+    train_mask = [False if (x > val_ratio + test_ratio) else True for x in rnd]
+    val_mask = [False if (val_ratio + test_ratio >= x) else True for x in rnd]
+    test_mask = [False if (test_ratio >= x) else True for x in rnd]
+
+    return torch.tensor(train_mask), torch.tensor(val_mask), torch.tensor(test_mask)
