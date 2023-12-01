@@ -20,7 +20,6 @@ class GAT(torch.nn.Module):
 
         return x
 
-
 # class GAT(nn.Module):
 #     def __init__(self,
 #                  g,

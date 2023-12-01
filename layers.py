@@ -36,6 +36,8 @@ from torch_geometric.utils.sparse import set_sparse_value
 # from dgl.nn.functional import edge_softmax
 # from dgl.nn.pytorch.utils import Identity
 
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class GATConv(MessagePassing):
     r"""The graph attentional operator from the `"Graph Attention Networks"
@@ -259,6 +261,7 @@ class GATConv(MessagePassing):
             assert x.dim() == 2, "Static graphs not supported in 'GATConv'"
 
             if self.lin is not None:
+                # x_src = x_dst = self.lin(x).view(-1, H, C).to(device)
                 x_src = x_dst = self.lin(x).view(-1, H, C)
             else:
                 # If the module is initialized as bipartite, transform source

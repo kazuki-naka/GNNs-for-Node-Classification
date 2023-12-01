@@ -16,9 +16,8 @@ import dgl
 import pickle as pkl
 
 from models import GAT
-from util import load_data, load_synthetic_data, KMM, preprocess_features, device, DATASET, train, cmd
+from util import load_data, load_synthetic_data, KMM, preprocess_features, device, DATASET, train, test, cmd, path
 
-path = os.path.abspath(os.path.dirname(os.getcwd())) + "/data"
 
 def main():
     dataset, num_in_feats, num_out_feats = load_data(path, name=DATASET)
@@ -26,6 +25,17 @@ def main():
     with open("new_result.txt", "w") as text: 
         print('pre-train', file = text)
     model, test_acc = train(model, dataset)
+
+    # distribution shift on graphs
+    node_feats, y = load_synthetic_data(path, DATASET,1)
+    dataset.x = node_feats
+    dataset.y = y
+    with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
+        val_loss, test_acc = test(model, dataset)
+    with open('new_result.txt', 'a') as text: 
+        print("test memory : ", file=text)
+        print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
+    
     # save model
     torch.save(model.state_dict(), 'weight_base.pth')
     with open("new_result.txt", "a") as text: 
