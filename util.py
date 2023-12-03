@@ -24,15 +24,14 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 DATASET = "Cora"
 
 @torch.no_grad()
-def test(model, data):
-    data = data.to(device)
+def test(model, data, idx_test):
     model.eval()
     out = model(data)
     loss_function = torch.nn.CrossEntropyLoss().to(device)
     loss = loss_function(out[data.val_mask], data.y[data.val_mask])
     _, pred = out.max(dim=1)
-    correct = int(pred[data.test_mask].eq(data.y[data.test_mask]).sum().item())
-    acc = correct / int(data.test_mask.sum())
+    correct = int(pred[idx_test].eq(data.y[idx_test]).sum().item())
+    acc = correct / int(idx_test.sum())
     model.train()
 
     return loss.item(), acc
@@ -54,7 +53,7 @@ def train(model, data):
             loss = loss_function(out[data.train_mask], data.y[data.train_mask])
             loss.backward()
             optimizer.step()  
-            val_loss, test_acc = test(model, data)
+            val_loss, test_acc = test(model, data, data.test_mask)
             if val_loss < min_val_loss and epoch + 1 > min_epochs:
                 min_val_loss = val_loss
                 best_model = copy.deepcopy(model)
@@ -71,45 +70,6 @@ def load_data(path, name):
     data = dataset[0].to(device)
     
     return data, dataset.num_node_features, dataset.num_classes
-
-def load_synthetic_data(path, name, lang): 
-    gen_planetoid_dataset(path, name)
-
-    data_dir = path + "/{}/gen".format(name)
-    node_feat, y = pkl.load(open('{}/{}-gat.pkl'.format(data_dir, lang), 'rb'))
-
-    return node_feat, y
-
-def gen_planetoid_dataset(path, name): 
-    torch_dataset = Planetoid(root=path, name=name)
-    data = torch_dataset[0]
-    print(data)
-
-    x = data.x
-    edge_index = data.edge_index
-    label = data.y
-    d = x.shape[1]
-
-    data_dir = path + "/{}/gen".format(name)
-    if not os.path.exists(data_dir): 
-        os.makedirs(data_dir)
-    
-    Generator_x = GAT_gen(10, 10, 10)
-    Generator_y = GAT_gen(d, 10, 10)
-    Generator_noise = nn.Linear(10, 10)
-    for i in range(10): 
-        x_new = x
-        y_new = Generator_y(x, edge_index)
-        y_new = torch.argmax(y_new, dim=-1)
-        label_new = F.one_hot(y_new, 10).squeeze(1).float()
-        context_ = torch.zeros(x.size(0), 10)
-        context_[:, i] = 1
-        x2 = Generator_x(label_new, edge_index) + Generator_noise(context_)
-        print(f"x2 size : {x2.size()}")
-        x_new = torch.cat([x_new, x2], dim=1)
-
-        with open(data_dir + '/{}-gat.pkl'.format(i), 'wb') as f: 
-            pkl.dump((x_new, y_new), f, pkl.HIGHEST_PROTOCOL)
 
 # def load_data(dataset_str): 
 #     names = ['x', 'y', 'tx', 'ty', 'allx', 'ally', 'graph']
@@ -153,11 +113,11 @@ def gen_planetoid_dataset(path, name):
 #     idx_val = range(len(y), len(y)+500)
 #     return adj, features, labels, idx_train, idx_val, idx_test
 
-# def load_synthetic_data(): 
-#     dataset = FakeDataset(num_channels=1433, num_classes=7, task='node')
-#     data = dataset[0].to(device)
+def load_synthetic_data(): 
+    dataset = FakeDataset(num_channels=1433, num_classes=7, task='node')
+    data = dataset[0].to(device)
 
-#     return data, dataset.num_node_features, dataset.num_classes
+    return data, dataset.num_node_features, dataset.num_classes
 
 # def parse_index_file(filename): 
 #     index = []

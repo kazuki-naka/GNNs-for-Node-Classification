@@ -24,22 +24,28 @@ def main():
     model = GAT(num_in_feats, 64, num_out_feats).to(device)
     with open("new_result.txt", "w") as text: 
         print('pre-train', file = text)
+    dataset = dataset.to(device)
     model, test_acc = train(model, dataset)
+    # save model
+    torch.save(model.state_dict(), 'weight_base.pth')
 
-    # distribution shift on graphs
-    node_feats, y = load_synthetic_data(path, DATASET,1)
-    dataset.x = node_feats
-    dataset.y = y
+    idx_train = torch.LongTensor(pkl.load(open('{}/{}/raw/localized_seeds_{}.p'.format(path, DATASET, DATASET.lower()), 'rb'))[0])
+    all_idx = set(range(dataset.num_nodes)) - set(idx_train)
+    idx_test = torch.LongTensor(list(all_idx))
+
+    model.conv2 = nn.Identity()
+    feature = model(dataset)
+    X = feature[idx_train, :]
+    X_test = feature[idx_test, :]
+    value_cmd = cmd(X, X_test, K=1)
+
     with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
-        val_loss, test_acc = test(model, dataset)
+        val_loss, test_acc = test(model, dataset, idx_test)
     with open('new_result.txt', 'a') as text: 
         print("test memory : ", file=text)
         print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
-    
-    # save model
-    torch.save(model.state_dict(), 'weight_base.pth')
-    with open("new_result.txt", "a") as text: 
         print("test acc: ", test_acc, file=text)
+        print("value of cmd: ", value_cmd, file=text)
         print("\n", file=text)
 
 if __name__ == '__main__':
