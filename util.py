@@ -13,15 +13,13 @@ import pickle as pkl
 import networkx as nx
 import scipy.sparse as sp
 
-from gen_models import GAT_gen
-
 import matplotlib.pyplot as plt
 
 from torch_geometric.datasets import FakeDataset, Planetoid
 
 path = os.getcwd() + "/data"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-DATASET = "Cora"
+DATASET = "PubMed"
 
 @torch.no_grad()
 def test(model, data, idx_test):

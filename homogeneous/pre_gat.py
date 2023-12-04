@@ -6,17 +6,16 @@ sys.path.insert(0, os.path.join(os.path.abspath(os.path.dirname(__file__)), os.p
 import torch
 import torch.nn  as nn
 import torch.nn.functional as F
+from torch_geometric.utils import to_dense_adj
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import time
-import networkx as nx
 import scipy.sparse as sp
 import numpy as np
-import dgl
-import pickle as pkl
+import random
 
 from models import GAT
-from util import load_data, load_synthetic_data, KMM, preprocess_features, device, DATASET, train, test, cmd, path
+from util import load_data, load_synthetic_data, KMM, preprocess_features, device, DATASET, train, test, cmd, path, train_val_split
 
 
 def main():
@@ -26,24 +25,23 @@ def main():
         print('pre-train', file = text)
     dataset = dataset.to(device)
     model, test_acc = train(model, dataset)
+    val_loss, test_real_acc = test(model, dataset, dataset.test_mask)
     # save model
     torch.save(model.state_dict(), 'weight_base.pth')
 
-    idx_train = torch.LongTensor(pkl.load(open('{}/{}/raw/localized_seeds_{}.p'.format(path, DATASET, DATASET.lower()), 'rb'))[0])
-    all_idx = set(range(dataset.num_nodes)) - set(idx_train)
-    idx_test = torch.LongTensor(list(all_idx))
-
-    model.conv2 = nn.Identity()
-    feature = model(dataset)
-    X = feature[idx_train, :]
-    X_test = feature[idx_test, :]
-    value_cmd = cmd(X, X_test, K=1)
+    train_mask, val_mask, test_mask = train_val_split(dataset)
+    Z = model.feature[train_mask, :]
+    Z_l = model.feature[test_mask, :]
+    value_cmd = cmd(Z, Z_l, K=5).item()
 
     with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
-        val_loss, test_acc = test(model, dataset, idx_test)
+        val_loss, test_acc = test(model, dataset, dataset.test_mask)
+        result = np.array([value_cmd, test_acc])
+        np.save('{}/data_0'.format(os.path.abspath(os.path.dirname(__file__))), result)
     with open('new_result.txt', 'a') as text: 
         print("test memory : ", file=text)
         print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
+        print("test acc(real data): ", test_real_acc, file=text)
         print("test acc: ", test_acc, file=text)
         print("value of cmd: ", value_cmd, file=text)
         print("\n", file=text)

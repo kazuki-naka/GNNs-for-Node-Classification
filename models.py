@@ -15,7 +15,7 @@ class GAT(torch.nn.Module):
         x, edge_index = data.x, data.edge_index
         x = F.dropout(x, p=0.6, training=self.training)
         x = F.relu(self.conv1(x, edge_index))
-        # self.h_out = x
+        self.feature = x
         x = self.conv2(x, edge_index)
 
         return x
