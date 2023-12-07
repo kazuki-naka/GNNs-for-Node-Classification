@@ -20,6 +20,8 @@ from util import load_data, load_synthetic_data, KMM, preprocess_features, devic
 
 def main():
     dataset, num_in_feats, num_out_feats = load_data(path, name=DATASET)
+    train_mask, test_mask = train_test_split(dataset)
+    dataset.train_mask = train_mask
     model = GAT(num_in_feats, 64, num_out_feats).to(device)
     with open("new_result.txt", "w") as text: 
         print('pre-train', file = text)
@@ -28,7 +30,6 @@ def main():
     # save model
     torch.save(model.state_dict(), 'weight_base.pth')
 
-    train_mask, test_mask = train_test_split(dataset)
     Z = model.feature[dataset.train_mask, :]
     Z_l = model.feature[test_mask, :]
     value_cmd = cmd(Z, Z_l, K=5).item()
@@ -36,7 +37,7 @@ def main():
     with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
         val_loss, test_acc = test(model, dataset, test_mask)
         result = np.array([value_cmd, test_acc])
-        np.save('{}/data_5'.format(os.path.abspath(os.path.dirname(__file__))), result)
+        np.save('{}/data_3'.format(os.path.abspath(os.path.dirname(__file__))), result)
     with open('new_result.txt', 'a') as text: 
         print("test memory : ", file=text)
         print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)

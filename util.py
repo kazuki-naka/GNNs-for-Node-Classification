@@ -198,22 +198,16 @@ def preprocess_features(features):
 #     MMD_dist = H.mean() - 2 * f.mean() + z.mean()
 #     return MMD_dist
 
-def train_test_split(data, train_ratio: float = 0.30): 
+def train_test_split(data, train_ratio: float = 0.80): 
     data_len = len(data.x)
-    train_index = random.sample(range(data_len), k = int(data_len * train_ratio))
-    test_index = random.sample(range(data_len), k = int(data_len * (1 - train_ratio)))
+    split_num = int(data_len * train_ratio)
+    train_index = random.sample(range(data_len), k = split_num)
 
-    train_mask, test_mask = [], []
+    train_mask = torch.BoolTensor(data_len).fill_(False)
 
-    for i in range(data_len): 
-        if i in train_index: 
-            train_mask.append(True)
-        else: 
-            train_mask.append(False)
-        
-        if i in test_index: 
-            test_mask.append(True)
-        else: 
-            test_mask.append(False)
+    for i in train_index: 
+        train_mask[i] = True
+    
+    test_mask = ~train_mask
 
-    return torch.BoolTensor(train_mask), torch.BoolTensor(test_mask)
+    return train_mask, test_mask
