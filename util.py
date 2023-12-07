@@ -2,6 +2,7 @@
 import os
 import copy
 import sys
+import random
 
 import numpy as np
 import torch
@@ -19,7 +20,7 @@ from torch_geometric.datasets import FakeDataset, Planetoid
 
 path = os.getcwd() + "/data"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-DATASET = "PubMed"
+DATASET = "Cora"
 
 @torch.no_grad()
 def test(model, data, idx_test):
@@ -197,10 +198,22 @@ def preprocess_features(features):
 #     MMD_dist = H.mean() - 2 * f.mean() + z.mean()
 #     return MMD_dist
 
-def train_val_split(data, val_ratio: float = 0.15, test_ratio: float = 0.15): 
-    rnd = torch.rand(len(data.x))
-    train_mask = [False if (x > val_ratio + test_ratio) else True for x in rnd]
-    val_mask = [False if (val_ratio + test_ratio >= x) else True for x in rnd]
-    test_mask = [False if (test_ratio >= x) else True for x in rnd]
+def train_test_split(data, train_ratio: float = 0.30): 
+    data_len = len(data.x)
+    train_index = random.sample(range(data_len), k = int(data_len * train_ratio))
+    test_index = random.sample(range(data_len), k = int(data_len * (1 - train_ratio)))
 
-    return torch.tensor(train_mask), torch.tensor(val_mask), torch.tensor(test_mask)
+    train_mask, test_mask = [], []
+
+    for i in range(data_len): 
+        if i in train_index: 
+            train_mask.append(True)
+        else: 
+            train_mask.append(False)
+        
+        if i in test_index: 
+            test_mask.append(True)
+        else: 
+            test_mask.append(False)
+
+    return torch.BoolTensor(train_mask), torch.BoolTensor(test_mask)

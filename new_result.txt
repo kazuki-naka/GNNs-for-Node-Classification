@@ -1,42 +1,42 @@
 pre-train
 train memory : 
 -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
-                                                   Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg       CPU Mem  Self CPU Mem      CUDA Mem  Self CUDA Mem    # of Calls  Total GFLOPs  
+                                                   Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg       CPU Mem  Self CPU Mem      CUDA Mem  Self CUDA Mem    # of Calls  Total MFLOPs  
 -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
-                                            aten::empty         0.27%      15.638ms         0.27%      15.695ms       1.483us       0.000us         0.00%       0.000us       0.000us      26.55 Mb      26.55 Mb      25.53 Gb      25.53 Gb         10585            --  
-                                    aten::empty_strided         0.18%      10.789ms         0.20%      11.736ms       1.530us       0.000us         0.00%     288.000us       0.038us       4.23 Kb       4.23 Kb       9.15 Gb       9.15 Gb          7672            --  
-                                         aten::_to_copy         0.08%       4.573ms         0.13%       7.869ms       3.934us       0.000us         0.00%      12.797ms       6.399us       5.81 Kb       3.41 Kb      31.74 Mb       4.23 Mb          2000            --  
-                                            aten::copy_         0.11%       6.182ms         0.17%       9.908ms       3.209us       4.362ms         0.09%      30.808ms       9.977us       2.04 Kb       2.04 Kb           0 b           0 b          3088            --  
-                                              aten::div         0.20%      11.525ms         0.27%      15.638ms       6.510us      80.751ms         1.58%     103.505ms      43.091us       1.11 Kb       1.11 Kb      13.74 Gb      13.56 Gb          2402            --  
-                                        aten::remainder         0.04%       2.343ms         0.05%       2.832ms      13.951us     258.000us         0.01%     557.000us       2.744us         568 b         568 b     101.50 Kb     101.00 Kb           203            --  
-                                              aten::mul         0.53%      30.794ms         0.73%      42.894ms       7.382us        1.558s        30.57%        1.599s     275.095us         528 b         528 b     238.56 Gb     238.56 Gb          5811        41.530  
-                                             aten::div_         0.03%       1.561ms         0.03%       2.013ms       9.451us     214.000us         0.00%       6.120ms      28.732us         496 b         496 b           0 b           0 b           213            --  
-                                    aten::_foreach_add_         0.05%       2.838ms         0.25%      14.483ms      36.208us       2.567ms         0.05%       5.159ms      12.898us         564 b         452 b           0 b           0 b           400            --  
-                                          aten::dropout         0.01%     760.000us         0.14%       8.131ms       6.776us       0.000us         0.00%      50.588ms      42.157us           0 b           0 b       7.91 Gb      -1.35 Gb          1200            --  
+                                            aten::empty         0.94%      17.712ms         0.94%      17.712ms       1.694us       0.000us         0.00%       0.000us       0.000us      25.31 Mb      25.31 Mb       3.69 Gb       3.69 Gb         10458            --  
+                                    aten::empty_strided         0.54%      10.313ms         0.55%      10.451ms       1.396us       0.000us         0.00%      36.000us       0.005us       4.38 Kb       4.38 Kb       5.33 Gb       5.33 Gb          7488            --  
+                                         aten::_to_copy         0.22%       4.154ms         0.40%       7.507ms       3.753us       0.000us         0.00%       1.210ms       0.605us       5.75 Kb       3.29 Kb       5.76 Mb     537.50 Kb          2000            --  
+                                            aten::copy_         0.30%       5.680ms         0.51%       9.666ms       3.355us       3.132ms         0.33%       5.135ms       1.782us       1.75 Kb       1.75 Kb           0 b           0 b          2881            --  
+                                              aten::div         0.60%      11.385ms         0.83%      15.705ms       6.508us       9.425ms         1.00%      12.354ms       5.120us        1008 b         984 b       2.00 Gb       1.99 Gb          2413            --  
+                                        aten::remainder         0.12%       2.253ms         0.14%       2.741ms      13.242us     400.000us         0.04%     460.000us       2.222us         640 b         640 b     310.50 Kb     310.50 Kb           207            --  
+                                             aten::div_         0.07%       1.395ms         0.10%       1.836ms       8.701us     365.000us         0.04%     653.000us       3.095us         616 b         616 b           0 b           0 b           211            --  
+                                              aten::mul         1.52%      28.784ms         2.16%      40.906ms       7.039us     196.818ms        20.89%     204.945ms      35.268us         528 b         528 b      32.25 Gb      32.25 Gb          5811      5644.420  
+                                    aten::_foreach_add_         0.15%       2.760ms         0.73%      13.804ms      34.510us       5.196ms         0.55%       5.306ms      13.265us         452 b         360 b           0 b           0 b           400            --  
+                                          aten::dropout         0.05%     910.000us         0.46%       8.633ms       7.194us       0.000us         0.00%      19.451ms      16.209us           0 b           0 b       3.09 Gb    -533.29 Mb          1200            --  
 -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
-Self CPU time total: 5.841s
-Self CUDA time total: 5.098s
+Self CPU time total: 1.893s
+Self CUDA time total: 942.019ms
 
 test memory : 
 -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
-                                                   Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg       CPU Mem  Self CPU Mem      CUDA Mem  Self CUDA Mem    # of Calls  Total MFLOPs  
+                                                   Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg       CPU Mem  Self CPU Mem      CUDA Mem  Self CUDA Mem    # of Calls  Total KFLOPs  
 -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
-                                          aten::dropout         0.01%       1.000us         0.01%       1.000us       0.333us       0.000us         0.00%       0.000us       0.000us           0 b           0 b           0 b           0 b             3            --  
-                                           aten::linear         0.12%       9.000us         4.96%     375.000us     187.500us       0.000us         0.00%       1.074ms     537.000us           0 b           0 b      40.31 Mb           0 b             2            --  
-                                                aten::t         0.19%      14.000us         0.33%      25.000us       3.125us       0.000us         0.00%       0.000us       0.000us           0 b           0 b           0 b           0 b             8            --  
-                                        aten::transpose         0.16%      12.000us         0.17%      13.000us       1.625us       0.000us         0.00%       0.000us       0.000us           0 b           0 b           0 b           0 b             8            --  
-                                       aten::as_strided         0.01%       1.000us         0.01%       1.000us       0.012us       0.000us         0.00%       0.000us       0.000us           0 b           0 b           0 b           0 b            82            --  
-                                           aten::matmul         0.11%       8.000us         4.66%     352.000us     176.000us       0.000us         0.00%       1.074ms     537.000us           0 b           0 b      40.31 Mb           0 b             2            --  
-                                               aten::mm         4.23%     320.000us         4.55%     344.000us     172.000us       1.074ms        14.89%       1.074ms     537.000us           0 b           0 b      40.31 Mb      40.31 Mb             2     10155.675  
-cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFla...         0.07%       5.000us         0.07%       5.000us       0.312us       0.000us         0.00%       0.000us       0.000us           0 b           0 b           0 b           0 b            16            --  
-                                       cudaLaunchKernel         3.18%     240.000us         3.18%     240.000us       2.424us       0.000us         0.00%       0.000us       0.000us           0 b           0 b           0 b           0 b            99            --  
-                                 ampere_sgemm_128x64_tn         0.00%       0.000us         0.00%       0.000us       0.000us       1.046ms        14.50%       1.046ms       1.046ms           0 b           0 b           0 b           0 b             1            --  
+                                            aten::copy_         1.16%      26.000us         2.14%      48.000us       8.000us       9.000us         0.65%       9.000us       1.500us      21.16 Kb      21.16 Kb           0 b           0 b             6            --  
+                                          aten::nonzero         6.16%     138.000us        40.56%     909.000us     151.500us      34.000us         2.44%      34.000us       5.667us      29.61 Kb      14.80 Kb     173.50 Kb       1.50 Kb             6            --  
+                                      aten::as_strided_         0.04%       1.000us         0.04%       1.000us       0.500us       0.000us         0.00%       0.000us       0.000us      14.80 Kb      14.80 Kb           0 b           0 b             2            --  
+                                              aten::sum         2.59%      58.000us         4.33%      97.000us      16.167us      65.000us         4.66%      68.000us      11.333us           8 b           8 b     340.50 Kb     310.50 Kb             6            --  
+                                          aten::dropout         0.09%       2.000us         0.09%       2.000us       0.667us       0.000us         0.00%       0.000us       0.000us           0 b           0 b           0 b           0 b             3            --  
+                                           aten::linear         0.31%       7.000us        16.73%     375.000us     187.500us       0.000us         0.00%     474.000us     237.000us           0 b           0 b       5.87 Mb           0 b             2            --  
+                                                aten::t         0.45%      10.000us         1.03%      23.000us       3.833us       0.000us         0.00%       0.000us       0.000us           0 b           0 b           0 b           0 b             6            --  
+                                        aten::transpose         0.58%      13.000us         0.62%      14.000us       2.333us       0.000us         0.00%       0.000us       0.000us           0 b           0 b           0 b           0 b             6            --  
+                                       aten::as_strided         0.09%       2.000us         0.09%       2.000us       0.025us       0.000us         0.00%       0.000us       0.000us           0 b           0 b           0 b           0 b            80            --  
+                                           aten::matmul         0.40%       9.000us        15.75%     353.000us     176.500us       0.000us         0.00%     474.000us     237.000us           0 b           0 b       5.87 Mb           0 b             2            --  
 -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
-Self CPU time total: 7.557ms
-Self CUDA time total: 7.215ms
+Self CPU time total: 2.241ms
+Self CUDA time total: 1.394ms
 
-test acc(real data):  0.777
-test acc:  0.777
-value of cmd:  0.006471933797001839
+test acc(real data):  0.792
+test acc:  0.7873350923482849
+value of cmd:  4.76780891418457
 
 

@@ -15,7 +15,7 @@ import numpy as np
 import random
 
 from models import GAT
-from util import load_data, load_synthetic_data, KMM, preprocess_features, device, DATASET, train, test, cmd, path, train_val_split
+from util import load_data, load_synthetic_data, KMM, preprocess_features, device, DATASET, train, test, cmd, path, train_test_split
 
 
 def main():
@@ -24,20 +24,19 @@ def main():
     with open("new_result.txt", "w") as text: 
         print('pre-train', file = text)
     dataset = dataset.to(device)
-    model, test_acc = train(model, dataset)
-    val_loss, test_real_acc = test(model, dataset, dataset.test_mask)
+    model, test_real_acc = train(model, dataset)
     # save model
     torch.save(model.state_dict(), 'weight_base.pth')
 
-    train_mask, val_mask, test_mask = train_val_split(dataset)
-    Z = model.feature[train_mask, :]
+    train_mask, test_mask = train_test_split(dataset)
+    Z = model.feature[dataset.train_mask, :]
     Z_l = model.feature[test_mask, :]
     value_cmd = cmd(Z, Z_l, K=5).item()
 
     with torch.profiler.profile(profile_memory=True, with_flops=True) as p: 
-        val_loss, test_acc = test(model, dataset, dataset.test_mask)
+        val_loss, test_acc = test(model, dataset, test_mask)
         result = np.array([value_cmd, test_acc])
-        np.save('{}/data_0'.format(os.path.abspath(os.path.dirname(__file__))), result)
+        np.save('{}/data_5'.format(os.path.abspath(os.path.dirname(__file__))), result)
     with open('new_result.txt', 'a') as text: 
         print("test memory : ", file=text)
         print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
