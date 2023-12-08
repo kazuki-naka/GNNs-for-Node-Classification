@@ -18,9 +18,11 @@ from models import GAT
 from util import load_data, load_synthetic_data, KMM, preprocess_features, device, DATASET, train, test, cmd, path, train_test_split
 
 
+dataset, num_in_feats, num_out_feats = load_data(path, name=DATASET)
+train_mask, test_mask = train_test_split(dataset)
+
 def main():
-    dataset, num_in_feats, num_out_feats = load_data(path, name=DATASET)
-    train_mask, test_mask = train_test_split(dataset)
+    global dataset, num_in_feats, num_out_feats, train_mask, test_mask
     dataset.train_mask = train_mask
     model = GAT(num_in_feats, 64, num_out_feats).to(device)
     with open("new_result.txt", "w") as text: 
