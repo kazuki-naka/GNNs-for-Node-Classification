@@ -143,7 +143,7 @@ def preprocess_features(features):
     except:
         return features
 
-def train_test_split(data, train_ratio: float = 0.40): 
+def train_test_split(data, train_ratio: float = 0.70): 
     data_len = len(data.x)
     split_num = int(data_len * train_ratio)
     train_index = random.sample(range(data_len), k = split_num)

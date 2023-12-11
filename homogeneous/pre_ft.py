@@ -1,25 +1,13 @@
 import os
-import copy
 import sys
 sys.path.insert(0, os.path.join(os.path.abspath(os.path.dirname(__file__)), os.pardir))
 
 import torch
-import torch.nn  as nn
-import torch.nn.functional as F
 from tqdm import tqdm
-import time
 import loralib as lora
-import random
 
-import networkx as nx
-import numpy as np
-import matplotlib.pyplot as plt
-import dgl
-import pickle as pkl
-from sklearn.metrics import f1_score
-import scipy.sparse as sp
 from models import GAT
-from util import load_data, load_synthetic_data, KMM, cmd, preprocess_features, device, DATASET, test
+from util import device, DATASET, test
 import pre_gat
 
 
@@ -42,6 +30,14 @@ def main():
         ft_test_mask[ft_test_index[i].item()] = True
     
     model = GAT(num_in_feats, 64, num_out_feats, finetune = True).to(device)
+    with open('new_result.txt', 'a') as text: 
+        print("parameters after fine-tuning", file=text)
+    params = 0
+    for param in model.parameters(): 
+        if param.requires_grad: 
+            params += param.numel()
+    with open('new_result.txt', 'a') as text: 
+        print(params, file=text)
 
     # load pre-trained model
     model.load_state_dict(torch.load('weight_base.pth'), strict=False)
@@ -74,6 +70,15 @@ def main():
         print("train(fine-tuning) : ", file=text)
         print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
         print("test(fine-tuning) : ", file=text)
+    
+    with open('new_result.txt', 'a') as text: 
+        print("parameters after fine-tuning", file=text)
+    params = 0
+    for param in model.parameters(): 
+        if param.requires_grad: 
+            params += param.numel()
+    with open('new_result.txt', 'a') as text: 
+        print(params, file=text)
     
 
     with torch.profiler.profile(profile_memory=True, with_flops=True) as p:

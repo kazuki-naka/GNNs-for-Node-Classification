@@ -1,21 +1,12 @@
 import os
-import copy
 import sys
 sys.path.insert(0, os.path.join(os.path.abspath(os.path.dirname(__file__)), os.pardir))
 
 import torch
-import torch.nn  as nn
-import torch.nn.functional as F
-from torch_geometric.utils import to_dense_adj
-from tqdm import tqdm
-import matplotlib.pyplot as plt
-import time
-import scipy.sparse as sp
 import numpy as np
-import random
 
 from models import GAT
-from util import load_data, load_synthetic_data, KMM, preprocess_features, device, DATASET, train, test, cmd, path, train_test_split
+from util import load_data, device, DATASET, train, test, cmd, path, train_test_split
 
 
 dataset, num_in_feats, num_out_feats = load_data(path, name=DATASET)
@@ -25,9 +16,17 @@ def main():
     global dataset, num_in_feats, num_out_feats, train_mask, test_mask
     dataset.train_mask = train_mask
     model = GAT(num_in_feats, 64, num_out_feats).to(device)
-    with open("new_result.txt", "w") as text: 
+    with open('new_result.txt', 'w') as text: 
+        print("parameters before fine-tuning", file=text)
+    params = 0
+    for param in model.parameters(): 
+        if param.requires_grad: 
+            params += param.numel()
+    with open('new_result.txt', 'a') as text: 
+        print(params, file=text)
+    with open("new_result.txt", "a") as text: 
         print('pre-train', file = text)
-    dataset = dataset.to(device)
+    # dataset = dataset.to(device)
     model, test_real_acc = train(model, dataset)
     # save model
     torch.save(model.state_dict(), 'weight_base.pth')
