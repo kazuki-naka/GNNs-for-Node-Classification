@@ -145,7 +145,8 @@ class GATConv(MessagePassing):
         edge_dim: Optional[int] = None,
         fill_value: Union[float, Tensor, str] = 'mean',
         bias: bool = True,
-        finetune = False,
+        finetune: bool = False,
+        r: int = 0,
         **kwargs,
     ):
         kwargs.setdefault('aggr', 'add')
@@ -160,21 +161,22 @@ class GATConv(MessagePassing):
         self.add_self_loops = add_self_loops
         self.edge_dim = edge_dim
         self.fill_value = fill_value
+        self.r = r
 
         # In case we are operating in bipartite graphs, we apply separate
         # transformations 'lin_src' and 'lin_dst' to source and target nodes:
         self.lin = self.lin_src = self.lin_dst = None
         if isinstance(in_channels, int):
             if finetune: 
-                self.lin = lora.Linear(in_channels, heads * out_channels, r = 1, bias=False)
+                self.lin = lora.Linear(in_channels, heads * out_channels, r = r, bias=False)
             else: 
                 self.lin = Linear(in_channels, heads * out_channels, bias=False,
                               weight_initializer='glorot')
                 
         else:
             if finetune: 
-                self.lin_src = lora.Linear(in_channels[0], heads * out_channels, r = 1, bias = False)
-                self.lin_dst = lora.Linear(in_channels[1], heads * out_channels, r = 1, bias = False)
+                self.lin_src = lora.Linear(in_channels[0], heads * out_channels, r = r, bias = False)
+                self.lin_dst = lora.Linear(in_channels[1], heads * out_channels, r = r, bias = False)
             else: 
                 self.lin_src = Linear(in_channels[0], heads * out_channels, False,
                                   weight_initializer='glorot')

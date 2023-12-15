@@ -29,15 +29,15 @@ def main():
     for i in range(len(ft_test_index)): 
         ft_test_mask[ft_test_index[i].item()] = True
     
-    model = GAT(num_in_feats, 64, num_out_feats, finetune = True).to(device)
-    with open('new_result.txt', 'a') as text: 
-        print("parameters after fine-tuning", file=text)
-    params = 0
-    for param in model.parameters(): 
-        if param.requires_grad: 
-            params += param.numel()
-    with open('new_result.txt', 'a') as text: 
-        print(params, file=text)
+    model = GAT(num_in_feats, 64, num_out_feats, finetune = True, r = 16).to(device)
+    # with open('new_result.txt', 'a') as text: 
+    #     print("parameters after fine-tuning", file=text)
+    # params = 0
+    # for param in model.parameters(): 
+    #     if param.requires_grad: 
+    #         params += param.numel()
+    # with open('new_result.txt', 'a') as text: 
+    #     print(params, file=text)
 
     # load pre-trained model
     model.load_state_dict(torch.load('weight_base.pth'), strict=False)
@@ -71,14 +71,14 @@ def main():
         print(p.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10), file=text)
         print("test(fine-tuning) : ", file=text)
     
-    with open('new_result.txt', 'a') as text: 
-        print("parameters after fine-tuning", file=text)
-    params = 0
-    for param in model.parameters(): 
-        if param.requires_grad: 
-            params += param.numel()
-    with open('new_result.txt', 'a') as text: 
-        print(params, file=text)
+    # with open('new_result.txt', 'a') as text: 
+    #     print("parameters after fine-tuning", file=text)
+    # params = 0
+    # for param in model.parameters(): 
+    #     if param.requires_grad: 
+    #         params += param.numel()
+    # with open('new_result.txt', 'a') as text: 
+    #     print(params, file=text)
     
 
     with torch.profiler.profile(profile_memory=True, with_flops=True) as p:

@@ -70,12 +70,6 @@ def load_data(path, name):
     
     return data, dataset.num_node_features, dataset.num_classes
 
-def load_synthetic_data(): 
-    dataset = FakeDataset(num_channels=1433, num_classes=7, task='node')
-    data = dataset[0].to(device)
-
-    return data, dataset.num_node_features, dataset.num_classes
-
 def cmd(X, X_test, K): 
     x1 = X
     x2 = X_test
