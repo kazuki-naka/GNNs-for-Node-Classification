@@ -24,7 +24,7 @@ def main():
     #         params += param.numel()
     # with open('new_result.txt', 'a') as text: 
     #     print(params, file=text)
-    with open("new_result.txt", "a") as text: 
+    with open("new_result.txt", "w") as text: 
         print('pre-train', file = text)
     # dataset = dataset.to(device)
     model, test_real_acc = train(model, dataset)

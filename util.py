@@ -26,7 +26,7 @@ DATASET = "Cora"
 def test(model, data, idx_test):
     model.eval()
     out = model(data)
-    loss_function = torch.nn.CrossEntropyLoss().to(device)
+    loss_function = torch.nn.CrossEntropyLoss()
     loss = loss_function(out[data.val_mask], data.y[data.val_mask])
     _, pred = out.max(dim=1)
     correct = int(pred[idx_test].eq(data.y[idx_test]).sum().item())
@@ -38,7 +38,7 @@ def test(model, data, idx_test):
 
 def train(model, data):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
-    loss_function = torch.nn.CrossEntropyLoss().to(device)
+    loss_function = torch.nn.CrossEntropyLoss()
     min_val_loss = np.Inf
     best_model = None
     min_epochs = 5
