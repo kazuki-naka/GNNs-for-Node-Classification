@@ -29,7 +29,7 @@ def main():
     for i in range(len(ft_test_index)): 
         ft_test_mask[ft_test_index[i].item()] = True
     
-    model = GAT(num_in_feats, 64, num_out_feats, finetune = True, r = 32).to(device)
+    model = GAT(num_in_feats, 64, num_out_feats, finetune = True, r = 1).to(device)
     # with open('new_result.txt', 'a') as text: 
     #     print("parameters after fine-tuning", file=text)
     # params = 0
@@ -44,8 +44,8 @@ def main():
     lora.mark_only_lora_as_trainable(model)
 
     # update_param_names = ["conv1.lin.lora_A", "conv1.lin.lora_B", "conv2.lin.lora_A", "conv2.lin.lora_B"]
-    update_param_names = ["conv1.lin.lora_A", "conv1.lin.lora_B"]
-    # update_param_names = ["conv2.lin.lora_A", "conv2.lin.lora_B"]
+    # update_param_names = ["conv1.lin.lora_A", "conv1.lin.lora_B"]
+    update_param_names = ["conv2.lin.lora_A", "conv2.lin.lora_B"]
     params_to_update = []
     for name, param in model.named_parameters():
         if name in update_param_names:
