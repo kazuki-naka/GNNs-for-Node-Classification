@@ -16,17 +16,8 @@ def main():
     global dataset, num_in_feats, num_out_feats, train_mask, test_mask
     dataset.train_mask = train_mask
     model = GAT(num_in_feats, 64, num_out_feats).to(device)
-    # with open('new_result.txt', 'w') as text: 
-    #     print("parameters before fine-tuning", file=text)
-    # params = 0
-    # for param in model.parameters(): 
-    #     if param.requires_grad: 
-    #         params += param.numel()
-    # with open('new_result.txt', 'a') as text: 
-    #     print(params, file=text)
     with open("new_result.txt", "w") as text: 
         print('pre-train', file = text)
-    # dataset = dataset.to(device)
     model, test_real_acc = train(model, dataset)
     # save model
     torch.save(model.state_dict(), 'weight_base.pth')

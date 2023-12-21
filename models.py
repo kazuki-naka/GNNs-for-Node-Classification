@@ -6,10 +6,10 @@ from layers import GATConv
 # from torch_geometric.nn import GATConv
 
 class GAT(torch.nn.Module):
-    def __init__(self, in_feats, h_feats, out_feats, finetune=False, r: int = 0):
+    def __init__(self, in_feats, h_feats, out_feats, finetune=False, r1: int = 0, r2: int = 0):
         super(GAT, self).__init__()
-        self.conv1 = GATConv(in_feats, h_feats, heads=8, concat=False, r = r)
-        self.conv2 = GATConv(h_feats, out_feats, heads=8, concat=False, finetune = finetune, r = r)
+        self.conv1 = GATConv(in_feats, h_feats, heads=8, concat=False, finetune = finetune, r = r1)
+        self.conv2 = GATConv(h_feats, out_feats, heads=8, concat=False, finetune = finetune, r = r2)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index

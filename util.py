@@ -105,27 +105,6 @@ def pairwise_distances(x, y=None):
     dist = x_norm + y_norm - 2.0 * torch.mm(x, y_t)
     return torch.clamp(dist, 0.0, np.inf)
 
-# find the appropriate weights which minimize MMD distance
-def KMM(X,Xtest,_A=None, _sigma=1e1,beta=0.2):
-
-    H = torch.exp(- 1e0 * pairwise_distances(X)) + torch.exp(- 1e-1 * pairwise_distances(X)) + torch.exp(- 1e-3 * pairwise_distances(X))
-    f = torch.exp(- 1e0 * pairwise_distances(X, Xtest)) + torch.exp(- 1e-1 * pairwise_distances(X, Xtest)) + torch.exp(- 1e-3 * pairwise_distances(X, Xtest))
-    z = torch.exp(- 1e0 * pairwise_distances(Xtest, Xtest)) + torch.exp(- 1e-1 * pairwise_distances(Xtest, Xtest)) + torch.exp(- 1e-3 * pairwise_distances(Xtest, Xtest))
-    H /= 3
-    f /= 3
-    
-    nsamples = X.shape[0]
-    f = - X.shape[0] / Xtest.shape[0] * f.matmul(torch.ones((Xtest.shape[0],1)))
-    G = - np.eye(nsamples)
-    _A = _A[~np.all(_A==0, axis=1)]
-    b = _A.sum(1)
-    h = - beta * np.ones((nsamples,1))
-    
-    from cvxopt import matrix, solvers
-    solvers.options['show_progress'] = False
-    sol=solvers.qp(matrix(H.numpy().astype(np.double)), matrix(f.numpy().astype(np.double)), matrix(G), matrix(h), matrix(_A), matrix(b))
-    return np.array(sol['x'])
-
 def preprocess_features(features): 
     rowsum = np.array(features.sum(1))
     r_inv = np.power(rowsum, -1).flatten()
