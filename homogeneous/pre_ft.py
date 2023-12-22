@@ -29,7 +29,7 @@ def main():
     for i in range(len(ft_test_index)): 
         ft_test_mask[ft_test_index[i].item()] = True
     
-    model = GAT(num_in_feats, 64, num_out_feats, finetune = True, r1 = 16, r2 = 1).to(device)
+    model = GAT(num_in_feats, 64, num_out_feats, finetune = True, r1 = 1, r2 = 1).to(device)
 
     # load pre-trained model
     model.load_state_dict(torch.load('weight_base.pth'), strict=False)

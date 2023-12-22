@@ -16,7 +16,7 @@ def main():
     global dataset, num_in_feats, num_out_feats, train_mask, test_mask
     dataset.train_mask = train_mask
     model = GAT(num_in_feats, 64, num_out_feats).to(device)
-    with open("new_result.txt", "w") as text: 
+    with open("new_result.txt", "a") as text: 
         print('pre-train', file = text)
     model, test_real_acc = train(model, dataset)
     # save model
